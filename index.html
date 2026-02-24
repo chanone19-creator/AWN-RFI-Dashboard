@@ -84,27 +84,7 @@ body::before {
 .btn-refresh.spinning svg { animation: spin 0.7s linear infinite; }
 @keyframes spin { to { transform: rotate(360deg); } }
 
-/* GAS URL bar */
-.gas-bar {
-  display: flex; gap: 10px; margin-bottom: 28px; flex-wrap: wrap;
-  background: var(--bg-card); border: 1px solid var(--border); border-radius: 12px; padding: 14px 16px;
-}
-.gas-bar label { font-size: 0.8rem; color: var(--text-secondary); white-space: nowrap; align-self: center; }
-.gas-input {
-  flex: 1; min-width: 200px; background: var(--bg-surface);
-  border: 1px solid var(--border); border-radius: 8px;
-  padding: 8px 12px; color: var(--text-primary); font-family: var(--font-main); font-size: 0.82rem;
-  outline: none; transition: border 0.2s;
-}
-.gas-input:focus { border-color: var(--cyan); }
-.gas-input::placeholder { color: var(--text-muted); }
-.btn-save {
-  padding: 8px 18px; border-radius: 8px; cursor: pointer;
-  background: linear-gradient(135deg, var(--cyan) 0%, #0090cc 100%);
-  border: none; color: #001a2e; font-family: var(--font-main); font-size: 0.82rem; font-weight: 700;
-  transition: all 0.2s; white-space: nowrap;
-}
-.btn-save:hover { opacity: 0.85; transform: translateY(-1px); }
+/* GAS URL bar styles removed */
 
 /* KPI CARDS */
 .kpi-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 16px; margin-bottom: 24px; }
@@ -308,12 +288,7 @@ tbody td:first-child { color: var(--text-primary); font-weight: 600; }
     </div>
   </div>
 
-  <!-- GAS URL BAR -->
-  <div class="gas-bar">
-    <label>🔗 Google Apps Script URL:</label>
-    <input class="gas-input" id="gasUrl" type="url" placeholder="https://script.google.com/macros/s/.../exec  (ว่างไว้ = ใช้ข้อมูลจากไฟล์)">
-    <button class="btn-save" onclick="saveGasUrl()">💾 บันทึกและรีเฟรช</button>
-  </div>
+
 
   <!-- KPI CARDS -->
   <div class="kpi-grid" id="kpiGrid"></div>
@@ -425,34 +400,38 @@ let charts = {};
 // ============================================================
 // INIT
 // ============================================================
-window.addEventListener('DOMContentLoaded', () => {
-  // Load GAS URL from localStorage
-  const savedUrl = localStorage.getItem('awn_gas_url') || '';
-  document.getElementById('gasUrl').value = savedUrl;
+const GAS_URL = 'https://script.google.com/macros/s/AKfycbxt-tzPbKfVUF5XTtj3ydoNKdW0R6q6B1qBsIrJSWazv0mI98DYr5qHNyNQOOqPwLI/exec';
+const AUTO_REFRESH_MS = 300000; // auto-refresh ทุก 5 นาที
+let autoRefreshTimer = null;
 
+window.addEventListener('DOMContentLoaded', () => {
   loadData();
+  startAutoRefresh();
 });
 
-async function loadData() {
-  const gasUrl = (localStorage.getItem('awn_gas_url') || '').trim();
-  let data = EMBEDDED_DATA;
+function startAutoRefresh() {
+  if (autoRefreshTimer) clearInterval(autoRefreshTimer);
+  autoRefreshTimer = setInterval(() => {
+    loadData(true); // silent refresh
+  }, AUTO_REFRESH_MS);
+}
 
-  if (gasUrl) {
-    try {
-      const btn = document.getElementById('btnRefresh');
-      btn.classList.add('spinning');
-      const resp = await fetch(gasUrl);
-      const json = await resp.json();
-      if (Array.isArray(json) && json.length > 0) {
-        data = json;
-      }
-      btn.classList.remove('spinning');
-    } catch(e) {
-      console.warn('GAS fetch failed, using embedded data:', e);
-      document.getElementById('btnRefresh').classList.remove('spinning');
+async function loadData(silent) {
+  const btn = document.getElementById('btnRefresh');
+  if (!silent) btn.classList.add('spinning');
+
+  let data = EMBEDDED_DATA;
+  try {
+    const resp = await fetch(GAS_URL + '?t=' + Date.now()); // cache-bust
+    const json = await resp.json();
+    if (Array.isArray(json) && json.length > 0) {
+      data = json;
     }
+  } catch(e) {
+    console.warn('GAS fetch failed, using embedded data:', e);
   }
 
+  btn.classList.remove('spinning');
   allData = data;
   applyFilters();
   renderKPI();
@@ -460,16 +439,10 @@ async function loadData() {
   document.getElementById('updateTime').textContent = 'อัพเดทล่าสุด: ' + new Date().toLocaleTimeString('th-TH');
 }
 
-function saveGasUrl() {
-  const url = document.getElementById('gasUrl').value.trim();
-  localStorage.setItem('awn_gas_url', url);
-  loadData();
-}
-
 function refreshData() {
   const btn = document.getElementById('btnRefresh');
   btn.classList.add('spinning');
-  setTimeout(() => { loadData(); }, 200);
+  loadData();
 }
 
 // ============================================================
