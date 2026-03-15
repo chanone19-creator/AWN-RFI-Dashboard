@@ -499,6 +499,7 @@ function getStatus(row) {
 function getInfClass(inf) {
   if (!inf) return 'badge-inf105';
   if (inf.includes('>= -90')) return 'badge-inf90';
+  if (inf.includes('-105')) return 'badge-inf105';
   if (inf.includes('-100')) return 'badge-inf100';
   return 'badge-inf105';
 }
