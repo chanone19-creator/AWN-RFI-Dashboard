@@ -4,6 +4,10 @@
 
 const {
   PAGE_SIZE,
+  INF_TIERS,
+  INF_LEVELS,
+  INF_PRIORITY,
+  BRAND_MAP,
   getStatus,
   getInfClass,
   getInfLevel,
@@ -524,5 +528,75 @@ describe('formatInfLabel', () => {
 
   test('leaves unrelated strings unchanged', () => {
     expect(formatInfLabel('-105<=INF<-100')).toBe('-105<=INF<-100');
+  });
+});
+
+// ============================================================
+// Module-level constants
+// ============================================================
+describe('INF_TIERS', () => {
+  test('has exactly 3 tiers', () => {
+    expect(INF_TIERS).toHaveLength(3);
+  });
+
+  test('each tier has pattern, level, and badge', () => {
+    INF_TIERS.forEach(t => {
+      expect(t).toHaveProperty('pattern');
+      expect(t).toHaveProperty('level');
+      expect(t).toHaveProperty('badge');
+    });
+  });
+
+  test('tier patterns match the same strings as getInfClass and getInfLevel', () => {
+    expect(getInfClass('>= -90 test')).toBe('badge-inf90');
+    expect(getInfLevel('>= -90 test')).toBe('INF≥-90');
+    expect(getInfClass('-105<=INF<-100')).toBe('badge-inf105');
+    expect(getInfLevel('-105<=INF<-100')).toBe('-105≤INF<-100');
+  });
+});
+
+describe('INF_LEVELS', () => {
+  test('contains all four expected levels', () => {
+    expect(INF_LEVELS).toContain('INF≥-90');
+    expect(INF_LEVELS).toContain('-100≤INF<-90');
+    expect(INF_LEVELS).toContain('-105≤INF<-100');
+    expect(INF_LEVELS).toContain('ไม่ระบุ');
+    expect(INF_LEVELS).toHaveLength(4);
+  });
+});
+
+describe('INF_PRIORITY', () => {
+  test('INF≥-90 has highest priority', () => {
+    expect(INF_PRIORITY['INF≥-90']).toBeGreaterThan(INF_PRIORITY['-100≤INF<-90']);
+    expect(INF_PRIORITY['INF≥-90']).toBeGreaterThan(INF_PRIORITY['-105≤INF<-100']);
+    expect(INF_PRIORITY['INF≥-90']).toBeGreaterThan(INF_PRIORITY['ไม่ระบุ']);
+  });
+
+  test('ไม่ระบุ has lowest priority', () => {
+    expect(INF_PRIORITY['ไม่ระบุ']).toBe(0);
+  });
+
+  test('all INF_LEVELS have a priority entry', () => {
+    INF_LEVELS.forEach(l => {
+      expect(INF_PRIORITY).toHaveProperty(l);
+    });
+  });
+});
+
+describe('BRAND_MAP', () => {
+  test('is a non-empty array of [brand, keyword] pairs', () => {
+    expect(Array.isArray(BRAND_MAP)).toBe(true);
+    expect(BRAND_MAP.length).toBeGreaterThan(0);
+    BRAND_MAP.forEach(entry => {
+      expect(entry).toHaveLength(2);
+      expect(typeof entry[0]).toBe('string');
+      expect(typeof entry[1]).toBe('string');
+    });
+  });
+
+  test('all keywords are lowercase (so matchBrands comparison works)', () => {
+    BRAND_MAP.forEach(([, key]) => {
+      expect(key).toBe(key.toLowerCase());
+    });
   });
 });

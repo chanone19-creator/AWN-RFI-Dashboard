@@ -5,6 +5,32 @@
 
 const PAGE_SIZE = 50;
 
+// Interference tier lookup — single source of truth for both badge class and level label.
+// Order matters: more-specific patterns (>= -90, -105) must precede less-specific (-100).
+const INF_TIERS = [
+  { pattern: '>= -90', level: 'INF≥-90',       badge: 'badge-inf90'  },
+  { pattern: '-105',   level: '-105≤INF<-100',  badge: 'badge-inf105' },
+  { pattern: '-100',   level: '-100≤INF<-90',   badge: 'badge-inf100' },
+];
+const INF_UNKNOWN_LEVEL = 'ไม่ระบุ';
+const INF_UNKNOWN_BADGE = 'badge-inf105';
+
+// Ordered list of all interference levels (highest priority first)
+const INF_LEVELS = ['INF≥-90', '-100≤INF<-90', '-105≤INF<-100', INF_UNKNOWN_LEVEL];
+const INF_PRIORITY = { 'INF≥-90': 3, '-100≤INF<-90': 2, '-105≤INF<-100': 1, [INF_UNKNOWN_LEVEL]: 0 };
+
+// Brand keyword map — hoisted so it is allocated once, not on every matchBrands() call
+const BRAND_MAP = [
+  ['L-VISION',   'l-vision'],  ['L-VISION',   'l vision'],
+  ['Be Well',    'be well'],   ['Be Well',    'bewell'],
+  ['FnK Vision', 'fnk'],
+  ['FOFU',       'fofu'],      ['FOFO',       'fofo'],
+  ['HVISION',    'hvision'],   ['PIXELS',     'pixel'],
+  ['SriHome',    'srihome'],   ['WiSTINO',    'wistino'],
+  ['WORLDTECH',  'worldtech'], ['GLSCAM',     'glscam'],
+  ['No-Brand',   'no-brand'],  ['No-Brand',   'no brand'],
+];
+
 /**
  * Determine row status: 'done' if action is filled, else 'pending'
  * @param {Object} row
@@ -20,11 +46,9 @@ function getStatus(row) {
  * @returns {string}
  */
 function getInfClass(inf) {
-  if (!inf) return 'badge-inf105';
-  if (inf.includes('>= -90')) return 'badge-inf90';
-  if (inf.includes('-105')) return 'badge-inf105';
-  if (inf.includes('-100')) return 'badge-inf100';
-  return 'badge-inf105';
+  if (!inf) return INF_UNKNOWN_BADGE;
+  const tier = INF_TIERS.find(t => inf.includes(t.pattern));
+  return tier ? tier.badge : INF_UNKNOWN_BADGE;
 }
 
 /**
@@ -33,11 +57,9 @@ function getInfClass(inf) {
  * @returns {string}
  */
 function getInfLevel(inf) {
-  if (!inf) return 'ไม่ระบุ';
-  if (inf.includes('>= -90')) return 'INF≥-90';
-  if (inf.includes('-105'))   return '-105≤INF<-100';
-  if (inf.includes('-100'))   return '-100≤INF<-90';
-  return 'ไม่ระบุ';
+  if (!inf) return INF_UNKNOWN_LEVEL;
+  const tier = INF_TIERS.find(t => inf.includes(t.pattern));
+  return tier ? tier.level : INF_UNKNOWN_LEVEL;
 }
 
 /**
@@ -79,7 +101,7 @@ function calcPageRange(currentPage, pages) {
 }
 
 /**
- * Validate page navigation: return new page number or current if out of range
+ * Validate page navigation: return new page number or null if out of range
  * @param {number} p - requested page
  * @param {number} currentPage
  * @param {number} totalItems
@@ -100,10 +122,10 @@ function validatePageNav(p, currentPage, totalItems) {
  */
 function filterData(data, currentFilter, search) {
   return data.filter(r => {
-    if (currentFilter === 'done' && getStatus(r) !== 'done') return false;
-    if (currentFilter === 'pending' && getStatus(r) !== 'pending') return false;
-    if (currentFilter === 'inf90' && !(r.interference || '').includes('>= -90')) return false;
-    if (currentFilter === 'inf100' && !(r.interference || '').includes('-100')) return false;
+    if (currentFilter === 'done'    && getStatus(r) !== 'done')                          return false;
+    if (currentFilter === 'pending' && getStatus(r) !== 'pending')                       return false;
+    if (currentFilter === 'inf90'   && !(r.interference || '').includes('>= -90'))       return false;
+    if (currentFilter === 'inf100'  && !(r.interference || '').includes('-100'))         return false;
     if (search) {
       const haystack = [r.siteCode, r.cellName, r.province, r.amphur, r.tumbol, r.cause, r.coordAWN]
         .filter(Boolean).join(' ').toLowerCase();
@@ -114,17 +136,19 @@ function filterData(data, currentFilter, search) {
 }
 
 /**
- * Compute KPI summary from data array
+ * Compute KPI summary from data array in a single pass
  * @param {Array} data
  * @returns {{ total: number, done: number, pending: number, identified: number, pct: number }}
  */
 function computeKPI(data) {
+  let done = 0, identified = 0;
+  data.forEach(r => {
+    if (getStatus(r) === 'done') done++;
+    if (r.cause && r.cause.trim()) identified++;
+  });
   const total = data.length;
-  const done = data.filter(r => getStatus(r) === 'done').length;
-  const pending = total - done;
-  const identified = data.filter(r => r.cause && r.cause.trim()).length;
   const pct = total ? Math.round(done / total * 100) : 0;
-  return { total, done, pending, identified, pct };
+  return { total, done, pending: total - done, identified, pct };
 }
 
 /**
@@ -133,21 +157,17 @@ function computeKPI(data) {
  * @returns {Object} counts per level
  */
 function computeSiteLevelCounts(data) {
-  const LEVELS = ['INF≥-90', '-100≤INF<-90', '-105≤INF<-100', 'ไม่ระบุ'];
-  const priority = { 'INF≥-90': 3, '-100≤INF<-90': 2, '-105≤INF<-100': 1, 'ไม่ระบุ': 0 };
   const siteLevel = {};
-
   data.forEach(r => {
     const site = r.siteCode;
     if (!site) return;
     const lv = getInfLevel(r.interference || '');
-    if (!siteLevel[site] || priority[lv] > priority[siteLevel[site]]) {
+    if (!siteLevel[site] || INF_PRIORITY[lv] > INF_PRIORITY[siteLevel[site]]) {
       siteLevel[site] = lv;
     }
   });
-
-  const counts = { 'INF≥-90': 0, '-100≤INF<-90': 0, '-105≤INF<-100': 0, 'ไม่ระบุ': 0 };
-  Object.entries(siteLevel).forEach(([, lv]) => { counts[lv]++; });
+  const counts = Object.fromEntries(INF_LEVELS.map(l => [l, 0]));
+  Object.values(siteLevel).forEach(lv => { counts[lv]++; });
   return counts;
 }
 
@@ -159,17 +179,8 @@ function computeSiteLevelCounts(data) {
  */
 function matchBrands(causeText) {
   const lower = (causeText || '').toLowerCase();
-  const map = [
-    ['L-VISION', 'l-vision'], ['L-VISION', 'l vision'],
-    ['Be Well', 'be well'], ['Be Well', 'bewell'],
-    ['FnK Vision', 'fnk'], ['FOFU', 'fofu'], ['FOFO', 'fofo'],
-    ['HVISION', 'hvision'], ['PIXELS', 'pixel'],
-    ['SriHome', 'srihome'], ['WiSTINO', 'wistino'],
-    ['WORLDTECH', 'worldtech'], ['GLSCAM', 'glscam'],
-    ['No-Brand', 'no-brand'], ['No-Brand', 'no brand']
-  ];
   const found = new Set();
-  map.forEach(([brand, key]) => {
+  BRAND_MAP.forEach(([brand, key]) => {
     if (lower.includes(key)) found.add(brand);
   });
   return Array.from(found);
@@ -186,6 +197,10 @@ function formatInfLabel(inf) {
 
 module.exports = {
   PAGE_SIZE,
+  INF_TIERS,
+  INF_LEVELS,
+  INF_PRIORITY,
+  BRAND_MAP,
   getStatus,
   getInfClass,
   getInfLevel,
