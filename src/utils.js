@@ -152,11 +152,13 @@ function computeSiteLevelCounts(data) {
 }
 
 /**
- * Map brand keywords in cause string to brand names
- * @param {string} causeText - lowercase cause text
+ * Map brand keywords in cause string to brand names.
+ * Input is normalised to lowercase internally.
+ * @param {string} causeText
  * @returns {string[]} list of matched brand names
  */
 function matchBrands(causeText) {
+  const lower = (causeText || '').toLowerCase();
   const map = [
     ['L-VISION', 'l-vision'], ['L-VISION', 'l vision'],
     ['Be Well', 'be well'], ['Be Well', 'bewell'],
@@ -168,9 +170,18 @@ function matchBrands(causeText) {
   ];
   const found = new Set();
   map.forEach(([brand, key]) => {
-    if (causeText.includes(key)) found.add(brand);
+    if (lower.includes(key)) found.add(brand);
   });
   return Array.from(found);
+}
+
+/**
+ * Format interference string for display in table (replaces ASCII symbols with Unicode)
+ * @param {string|null|undefined} inf
+ * @returns {string}
+ */
+function formatInfLabel(inf) {
+  return (inf || 'N/A').replace('=<INF<', '≤INF<').replace('>= ', '≥');
 }
 
 module.exports = {
@@ -186,4 +197,5 @@ module.exports = {
   computeKPI,
   computeSiteLevelCounts,
   matchBrands,
+  formatInfLabel,
 };

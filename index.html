@@ -514,6 +514,10 @@ function cleanCause(cause) {
   return cause.replace(/\n/g, ', ').replace(/\s+/g, ' ').trim().substring(0, 50);
 }
 
+function formatInfLabel(inf) {
+  return (inf || 'N/A').replace('=<INF<', '≤INF<').replace('>= ', '≥');
+}
+
 // ============================================================
 // KPI
 // ============================================================
@@ -1052,7 +1056,7 @@ function renderTable() {
   tbody.innerHTML = page.map((r, idx) => {
     const status = getStatus(r);
     const infClass = getInfClass(r.interference);
-    const infLabel = (r.interference || 'N/A').replace('=<INF<','≤INF<').replace('>= ','≥');
+    const infLabel = formatInfLabel(r.interference);
     const diffVal = r.diff ? r.diff.toFixed(2) : '—';
     return `<tr>
       <td style="color:var(--text-muted)">${start+idx+1}</td>

@@ -15,6 +15,7 @@ const {
   computeKPI,
   computeSiteLevelCounts,
   matchBrands,
+  formatInfLabel,
 } = require('../src/utils');
 
 // ============================================================
@@ -415,6 +416,16 @@ describe('computeSiteLevelCounts', () => {
     expect(counts['-100≤INF<-90']).toBe(0);
   });
 
+  test('site keeps existing level when new occurrence has equal or lower priority', () => {
+    const data = [
+      { siteCode: 'S1', interference: '>= -90 dBm' },      // INF≥-90 (highest)
+      { siteCode: 'S1', interference: '=<INF<-100' },      // lower priority — should NOT override
+    ];
+    const counts = computeSiteLevelCounts(data);
+    expect(counts['INF≥-90']).toBe(1);
+    expect(counts['-100≤INF<-90']).toBe(0);
+  });
+
   test('ignores rows with no siteCode', () => {
     const data = [
       { siteCode: null, interference: '>= -90 dBm' },
@@ -475,9 +486,43 @@ describe('matchBrands', () => {
     expect(result).toContain('FOFU');
   });
 
-  test('is case-sensitive on input (expects lowercase)', () => {
-    // Function expects already-lowercased input per usage pattern
-    expect(matchBrands('L-VISION')).toHaveLength(0); // won't match uppercase
-    expect(matchBrands('l-vision')).toContain('L-VISION');
+  test('normalises input to lowercase internally (uppercase input works)', () => {
+    expect(matchBrands('L-VISION')).toContain('L-VISION');
+    expect(matchBrands('BE WELL')).toContain('Be Well');
+  });
+
+  test('handles null/undefined input gracefully', () => {
+    expect(matchBrands(null)).toHaveLength(0);
+    expect(matchBrands(undefined)).toHaveLength(0);
+    expect(matchBrands('')).toHaveLength(0);
+  });
+});
+
+// ============================================================
+// formatInfLabel
+// ============================================================
+describe('formatInfLabel', () => {
+  test('replaces =<INF< with ≤INF<', () => {
+    expect(formatInfLabel('=<INF<-100')).toBe('≤INF<-100');
+  });
+
+  test('replaces ">= " with "≥"', () => {
+    expect(formatInfLabel('>= -90 dBm')).toBe('≥-90 dBm');
+  });
+
+  test('returns N/A for null', () => {
+    expect(formatInfLabel(null)).toBe('N/A');
+  });
+
+  test('returns N/A for undefined', () => {
+    expect(formatInfLabel(undefined)).toBe('N/A');
+  });
+
+  test('returns N/A for empty string', () => {
+    expect(formatInfLabel('')).toBe('N/A');
+  });
+
+  test('leaves unrelated strings unchanged', () => {
+    expect(formatInfLabel('-105<=INF<-100')).toBe('-105<=INF<-100');
   });
 });
