@@ -9,6 +9,7 @@ const {
   INF_PRIORITY,
   BRAND_MAP,
   getStatus,
+  getTier,
   getInfClass,
   getInfLevel,
   cleanCoord,
@@ -128,6 +129,56 @@ describe('getInfLevel', () => {
 });
 
 // ============================================================
+// getTier
+// ============================================================
+describe('getTier', () => {
+  test('returns full tier object for >= -90 string', () => {
+    const tier = getTier('>= -90 dBm');
+    expect(tier).not.toBeNull();
+    expect(tier.badge).toBe('badge-inf90');
+    expect(tier.level).toBe('INF≥-90');
+    expect(tier.pattern).toBe('>= -90');
+  });
+
+  test('returns full tier object for -105 string', () => {
+    const tier = getTier('-105<=INF<-100');
+    expect(tier.badge).toBe('badge-inf105');
+    expect(tier.level).toBe('-105≤INF<-100');
+  });
+
+  test('returns full tier object for -100 string (no -105)', () => {
+    const tier = getTier('=<INF<-100');
+    expect(tier.badge).toBe('badge-inf100');
+    expect(tier.level).toBe('-100≤INF<-90');
+  });
+
+  test('returns null for null', () => {
+    expect(getTier(null)).toBeNull();
+  });
+
+  test('returns null for undefined', () => {
+    expect(getTier(undefined)).toBeNull();
+  });
+
+  test('returns null for empty string', () => {
+    expect(getTier('')).toBeNull();
+  });
+
+  test('returns null for unrecognised string', () => {
+    expect(getTier('some random text')).toBeNull();
+  });
+
+  test('getInfClass and getInfLevel return values consistent with getTier', () => {
+    const testCases = ['>= -90 dBm', '-105<=INF<-100', '=<INF<-100'];
+    testCases.forEach(inf => {
+      const tier = getTier(inf);
+      expect(getInfClass(inf)).toBe(tier.badge);
+      expect(getInfLevel(inf)).toBe(tier.level);
+    });
+  });
+});
+
+// ============================================================
 // cleanCoord
 // ============================================================
 describe('cleanCoord', () => {
@@ -227,7 +278,7 @@ describe('calcPageRange', () => {
   test('does not have consecutive ellipsis', () => {
     const range = calcPageRange(5, 20);
     for (let i = 0; i < range.length - 1; i++) {
-      expect(!(range[i] === '...' && range[i + 1] === '...')).toBe(true);
+      expect(range[i] === '...' && range[i + 1] === '...').toBe(false);
     }
   });
 
@@ -249,27 +300,27 @@ describe('validatePageNav', () => {
   const ITEMS = PAGE_SIZE * 5; // 250 items → 5 pages
 
   test('returns page number for valid page', () => {
-    expect(validatePageNav(3, 1, ITEMS)).toBe(3);
+    expect(validatePageNav(3, ITEMS)).toBe(3);
   });
 
   test('returns null for page < 1', () => {
-    expect(validatePageNav(0, 1, ITEMS)).toBeNull();
+    expect(validatePageNav(0, ITEMS)).toBeNull();
   });
 
   test('returns null for page > total pages', () => {
-    expect(validatePageNav(6, 5, ITEMS)).toBeNull();
+    expect(validatePageNav(6, ITEMS)).toBeNull();
   });
 
   test('returns 1 for first page navigation', () => {
-    expect(validatePageNav(1, 2, ITEMS)).toBe(1);
+    expect(validatePageNav(1, ITEMS)).toBe(1);
   });
 
   test('returns last valid page', () => {
-    expect(validatePageNav(5, 4, ITEMS)).toBe(5);
+    expect(validatePageNav(5, ITEMS)).toBe(5);
   });
 
   test('returns null for empty dataset', () => {
-    expect(validatePageNav(1, 1, 0)).toBeNull();
+    expect(validatePageNav(1, 0)).toBeNull();
   });
 });
 

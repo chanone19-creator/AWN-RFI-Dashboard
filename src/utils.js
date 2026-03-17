@@ -13,7 +13,8 @@ const INF_TIERS = [
   { pattern: '-100',   level: '-100≤INF<-90',   badge: 'badge-inf100' },
 ];
 const INF_UNKNOWN_LEVEL = 'ไม่ระบุ';
-const INF_UNKNOWN_BADGE = 'badge-inf105';
+// Derived from the '-105' tier so it stays in sync if that tier's badge ever changes
+const INF_UNKNOWN_BADGE = INF_TIERS.find(t => t.pattern === '-105').badge;
 
 // Ordered list of all interference levels (highest priority first)
 const INF_LEVELS = ['INF≥-90', '-100≤INF<-90', '-105≤INF<-100', INF_UNKNOWN_LEVEL];
@@ -41,13 +42,23 @@ function getStatus(row) {
 }
 
 /**
+ * Find the matching interference tier for a raw interference string.
+ * Returns null when inf is falsy or no pattern matches.
+ * @param {string|null|undefined} inf
+ * @returns {{pattern:string, level:string, badge:string}|null}
+ */
+function getTier(inf) {
+  if (!inf) return null;
+  return INF_TIERS.find(t => inf.includes(t.pattern)) || null;
+}
+
+/**
  * Return CSS badge class based on interference level string
  * @param {string|null|undefined} inf
  * @returns {string}
  */
 function getInfClass(inf) {
-  if (!inf) return INF_UNKNOWN_BADGE;
-  const tier = INF_TIERS.find(t => inf.includes(t.pattern));
+  const tier = getTier(inf);
   return tier ? tier.badge : INF_UNKNOWN_BADGE;
 }
 
@@ -57,8 +68,7 @@ function getInfClass(inf) {
  * @returns {string}
  */
 function getInfLevel(inf) {
-  if (!inf) return INF_UNKNOWN_LEVEL;
-  const tier = INF_TIERS.find(t => inf.includes(t.pattern));
+  const tier = getTier(inf);
   return tier ? tier.level : INF_UNKNOWN_LEVEL;
 }
 
@@ -101,13 +111,12 @@ function calcPageRange(currentPage, pages) {
 }
 
 /**
- * Validate page navigation: return new page number or null if out of range
+ * Validate page navigation: return the requested page number or null if out of range
  * @param {number} p - requested page
- * @param {number} currentPage
  * @param {number} totalItems
  * @returns {number|null} new page number, or null if invalid
  */
-function validatePageNav(p, currentPage, totalItems) {
+function validatePageNav(p, totalItems) {
   const pages = Math.ceil(totalItems / PAGE_SIZE);
   if (p < 1 || p > pages) return null;
   return p;
@@ -202,6 +211,7 @@ module.exports = {
   INF_PRIORITY,
   BRAND_MAP,
   getStatus,
+  getTier,
   getInfClass,
   getInfLevel,
   cleanCoord,
