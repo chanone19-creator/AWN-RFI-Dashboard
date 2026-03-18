@@ -374,6 +374,22 @@ describe('filterData', () => {
     expect(result[0]).toBe(inf100);
   });
 
+  test('filter "inf100" must NOT include -105 rows (substring bug regression)', () => {
+    // '-105<=INF<-100' contains '-100' as a substring — must not be classified as inf100
+    const inf105 = makeRow({ interference: '-105<=INF<-100' });
+    const result = filterData([inf105, inf100], 'inf100', '');
+    expect(result).toHaveLength(1);
+    expect(result[0]).toBe(inf100);
+    expect(result).not.toContain(inf105);
+  });
+
+  test('filter "inf90" must NOT include -105 rows', () => {
+    const inf105 = makeRow({ interference: '-105<=INF<-100' });
+    const result = filterData([inf105, inf90], 'inf90', '');
+    expect(result).toHaveLength(1);
+    expect(result[0]).toBe(inf90);
+  });
+
   test('search filters by siteCode', () => {
     const r1 = makeRow({ siteCode: 'ABC123' });
     const r2 = makeRow({ siteCode: 'XYZ999' });

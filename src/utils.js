@@ -131,10 +131,10 @@ function validatePageNav(p, totalItems) {
  */
 function filterData(data, currentFilter, search) {
   return data.filter(r => {
-    if (currentFilter === 'done'    && getStatus(r) !== 'done')                          return false;
-    if (currentFilter === 'pending' && getStatus(r) !== 'pending')                       return false;
-    if (currentFilter === 'inf90'   && !(r.interference || '').includes('>= -90'))       return false;
-    if (currentFilter === 'inf100'  && !(r.interference || '').includes('-100'))         return false;
+    if (currentFilter === 'done'    && getStatus(r) !== 'done')                                    return false;
+    if (currentFilter === 'pending' && getStatus(r) !== 'pending')                                 return false;
+    if (currentFilter === 'inf90'   && getInfLevel(r.interference || '') !== 'INF≥-90')            return false;
+    if (currentFilter === 'inf100'  && getInfLevel(r.interference || '') !== '-100≤INF<-90')       return false;
     if (search) {
       const haystack = [r.siteCode, r.cellName, r.province, r.amphur, r.tumbol, r.cause, r.coordAWN]
         .filter(Boolean).join(' ').toLowerCase();

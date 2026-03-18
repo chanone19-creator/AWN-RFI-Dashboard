@@ -1033,8 +1033,8 @@ function applyFilters() {
     // Status filter
     if (currentFilter === 'done' && getStatus(r) !== 'done') return false;
     if (currentFilter === 'pending' && getStatus(r) !== 'pending') return false;
-    if (currentFilter === 'inf90' && !(r.interference||'').includes('>= -90')) return false;
-    if (currentFilter === 'inf100' && !(r.interference||'').includes('-100')) return false;
+    if (currentFilter === 'inf90'  && getInfClass(r.interference||'') !== 'badge-inf90')  return false;
+    if (currentFilter === 'inf100' && getInfClass(r.interference||'') !== 'badge-inf100') return false;
     // Search
     if (search) {
       const haystack = [r.siteCode, r.cellName, r.province, r.amphur, r.tumbol, r.cause, r.coordAWN]
