@@ -4,6 +4,7 @@
 
 const {
   PAGE_SIZE,
+  VIEW_COUNT_KEY,
   INF_TIERS,
   INF_LEVELS,
   INF_PRIORITY,
@@ -21,6 +22,9 @@ const {
   computeSiteLevelCounts,
   matchBrands,
   formatInfLabel,
+  getViewCount,
+  incrementViewCount,
+  resetViewCount,
 } = require('../src/utils');
 
 // ============================================================
@@ -595,6 +599,91 @@ describe('formatInfLabel', () => {
 
   test('leaves unrelated strings unchanged', () => {
     expect(formatInfLabel('-105<=INF<-100')).toBe('-105<=INF<-100');
+  });
+});
+
+// ============================================================
+// View count  (getViewCount / incrementViewCount / resetViewCount)
+// ============================================================
+
+/** Minimal in-memory storage mock — avoids touching real localStorage */
+function mockStorage(initial = {}) {
+  const store = { ...initial };
+  return {
+    getItem:  k     => (k in store ? store[k] : null),
+    setItem:  (k,v) => { store[k] = v; },
+    removeItem: k   => { delete store[k]; },
+  };
+}
+
+describe('getViewCount', () => {
+  test('returns 0 when storage is empty', () => {
+    expect(getViewCount(mockStorage())).toBe(0);
+  });
+
+  test('returns stored number', () => {
+    expect(getViewCount(mockStorage({ [VIEW_COUNT_KEY]: '42' }))).toBe(42);
+  });
+
+  test('returns 0 when storage value is not a valid number', () => {
+    expect(getViewCount(mockStorage({ [VIEW_COUNT_KEY]: 'bad' }))).toBe(0);
+  });
+
+  test('returns 0 when storage is null', () => {
+    expect(getViewCount(null)).toBe(0);
+  });
+});
+
+describe('incrementViewCount', () => {
+  test('increments from 0 to 1 on first call', () => {
+    const s = mockStorage();
+    expect(incrementViewCount(s)).toBe(1);
+  });
+
+  test('increments from existing value', () => {
+    const s = mockStorage({ [VIEW_COUNT_KEY]: '9' });
+    expect(incrementViewCount(s)).toBe(10);
+  });
+
+  test('persists the new value so a subsequent getViewCount reflects it', () => {
+    const s = mockStorage();
+    incrementViewCount(s);
+    incrementViewCount(s);
+    expect(getViewCount(s)).toBe(2);
+  });
+
+  test('returns 0 and does not throw when storage is null', () => {
+    expect(() => incrementViewCount(null)).not.toThrow();
+    expect(incrementViewCount(null)).toBe(0);
+  });
+
+  test('each call increments by exactly 1', () => {
+    const s = mockStorage();
+    for (let i = 1; i <= 5; i++) {
+      expect(incrementViewCount(s)).toBe(i);
+    }
+  });
+});
+
+describe('resetViewCount', () => {
+  test('sets count back to 0', () => {
+    const s = mockStorage({ [VIEW_COUNT_KEY]: '99' });
+    resetViewCount(s);
+    expect(getViewCount(s)).toBe(0);
+  });
+
+  test('works on an empty storage without throwing', () => {
+    expect(() => resetViewCount(mockStorage())).not.toThrow();
+  });
+
+  test('does not throw when storage is null', () => {
+    expect(() => resetViewCount(null)).not.toThrow();
+  });
+
+  test('after reset, incrementViewCount starts from 1 again', () => {
+    const s = mockStorage({ [VIEW_COUNT_KEY]: '50' });
+    resetViewCount(s);
+    expect(incrementViewCount(s)).toBe(1);
   });
 });
 

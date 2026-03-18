@@ -204,8 +204,60 @@ function formatInfLabel(inf) {
   return (inf || 'N/A').replace('=<INF<', '≤INF<').replace('>= ', '≥');
 }
 
+// ============================================================
+// VIEW COUNT
+// ============================================================
+const VIEW_COUNT_KEY = 'awn_rfi_view_count';
+
+// Default storage: browser's localStorage when available, null otherwise.
+// Pass a custom storage object in tests to avoid touching real localStorage.
+/* istanbul ignore next */
+function _defaultStorage() {
+  return typeof localStorage !== 'undefined' ? localStorage : null;
+}
+
+/**
+ * Read the current cumulative page-view count from storage.
+ * Returns 0 for null storage, missing key, or non-numeric stored value.
+ * @param {Storage|{getItem:Function,setItem:Function}|null} [storage]
+ * @returns {number}
+ */
+function getViewCount(storage) {
+  /* istanbul ignore next */
+  const store = storage !== undefined ? storage : _defaultStorage();
+  if (!store) return 0;
+  const n = parseInt(store.getItem(VIEW_COUNT_KEY) || '0', 10);
+  return isNaN(n) ? 0 : n;
+}
+
+/**
+ * Increment the page-view count in storage and return the new total.
+ * @param {Storage|{getItem:Function,setItem:Function}|null} [storage]
+ * @returns {number} updated count
+ */
+function incrementViewCount(storage) {
+  /* istanbul ignore next */
+  const store = storage !== undefined ? storage : _defaultStorage();
+  if (!store) return 0;
+  const count = getViewCount(store) + 1;
+  store.setItem(VIEW_COUNT_KEY, String(count));
+  return count;
+}
+
+/**
+ * Reset the page-view count to zero (useful for testing / admin reset).
+ * @param {Storage|{getItem:Function,setItem:Function}|null} [storage]
+ */
+function resetViewCount(storage) {
+  /* istanbul ignore next */
+  const store = storage !== undefined ? storage : _defaultStorage();
+  if (!store) return;
+  store.setItem(VIEW_COUNT_KEY, '0');
+}
+
 module.exports = {
   PAGE_SIZE,
+  VIEW_COUNT_KEY,
   INF_TIERS,
   INF_LEVELS,
   INF_PRIORITY,
@@ -223,4 +275,7 @@ module.exports = {
   computeSiteLevelCounts,
   matchBrands,
   formatInfLabel,
+  getViewCount,
+  incrementViewCount,
+  resetViewCount,
 };
