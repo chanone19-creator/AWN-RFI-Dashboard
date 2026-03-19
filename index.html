@@ -682,8 +682,6 @@ function renderDonut1() {
 function renderDonut2() {
   destroyChart('donut2');
   const LEVELS = ['INF≥-90', '-100≤INF<-90', '-105≤INF<-100', 'ไม่ระบุ'];
-  const siteSets = { 'INF≥-90': new Set(), '-100≤INF<-90': new Set(), '-105≤INF<-100': new Set(), 'ไม่ระบุ': new Set() };
-
   // Each site goes to its WORST (highest priority) level
   const priority = { 'INF≥-90': 3, '-100≤INF<-90': 2, '-105≤INF<-100': 1, 'ไม่ระบุ': 0 };
   const siteLevel = {};
@@ -695,8 +693,6 @@ function renderDonut2() {
       siteLevel[site] = lv;
     }
   });
-  Object.values(siteLevel).forEach(lv => siteSets[lv].add(lv));
-  // count properly
   const counts2 = { 'INF≥-90': 0, '-100≤INF<-90': 0, '-105≤INF<-100': 0, 'ไม่ระบุ': 0 };
   Object.entries(siteLevel).forEach(([site, lv]) => { counts2[lv]++; });
 
@@ -1106,7 +1102,9 @@ function renderTable() {
     </tr>`;
   }).join('');
 
-  document.getElementById('tableCount').textContent = `แสดง ${start+1}–${Math.min(start+PAGE_SIZE, totalFiltered)} จาก ${totalFiltered.toLocaleString()} รายการ`;
+  document.getElementById('tableCount').textContent = totalFiltered
+    ? `แสดง ${start+1}–${Math.min(start+PAGE_SIZE, totalFiltered)} จาก ${totalFiltered.toLocaleString()} รายการ`
+    : 'ไม่พบข้อมูล';
   renderPagination(totalFiltered);
 }
 
