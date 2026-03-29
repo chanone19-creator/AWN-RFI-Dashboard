@@ -522,7 +522,8 @@ function getInfClass(inf) {
 const VIEW_COUNT_KEY = 'awn_rfi_view_count';
 
 function getViewCount() {
-  return parseInt(localStorage.getItem(VIEW_COUNT_KEY) || '0', 10);
+  const n = parseInt(localStorage.getItem(VIEW_COUNT_KEY) || '0', 10);
+  return isNaN(n) ? 0 : n;
 }
 
 function incrementViewCount() {
@@ -810,22 +811,22 @@ function renderStacked() {
 }
 
 // Brand Horizontal Bar
+const HBAR_BRAND_MAP = [
+  ['L-VISION', 'l-vision'], ['L-VISION', 'l vision'],
+  ['Be Well', 'be well'], ['Be Well', 'bewell'],
+  ['FnK Vision', 'fnk'], ['FOFU', 'fofu'], ['FOFO', 'fofo'],
+  ['HVISION', 'hvision'], ['PIXELS', 'pixel'],
+  ['SriHome', 'srihome'], ['WiSTINO', 'wistino'],
+  ['WORLDTECH', 'worldtech'], ['GLSCAM', 'glscam'],
+  ['No-Brand', 'no-brand'], ['No-Brand', 'no brand']
+];
 function renderHBar() {
   destroyChart('hbar');
   const brandMap = {};
   allData.forEach(r => {
     if (!r.cause) return;
     const c = r.cause.toLowerCase();
-    const map = [
-      ['L-VISION', 'l-vision'], ['L-VISION', 'l vision'],
-      ['Be Well', 'be well'], ['Be Well', 'bewell'],
-      ['FnK Vision', 'fnk'], ['FOFU', 'fofu'], ['FOFO', 'fofo'],
-      ['HVISION', 'hvision'], ['PIXELS', 'pixel'],
-      ['SriHome', 'srihome'], ['WiSTINO', 'wistino'],
-      ['WORLDTECH', 'worldtech'], ['GLSCAM', 'glscam'],
-      ['No-Brand', 'no-brand'], ['No-Brand', 'no brand']
-    ];
-    map.forEach(([brand, key]) => {
+    HBAR_BRAND_MAP.forEach(([brand, key]) => {
       if (c.includes(key)) brandMap[brand] = (brandMap[brand]||0)+1;
     });
   });
