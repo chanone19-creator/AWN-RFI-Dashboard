@@ -426,22 +426,16 @@ window.addEventListener('DOMContentLoaded', () => {
   startCountdown();
 });
 
-// คำนวณเวลาที่เหลือจนถึง 06:00 น. วันถัดไป
-function msUntilNextRefresh() {
-  const now = new Date();
+// คำนวณเวลา 06:00 น. ถัดไป (วันนี้ถ้ายังไม่ถึง, ไม่งั้นพรุ่งนี้)
+function getNextRefreshTime() {
   const next = new Date();
   next.setHours(DAILY_REFRESH_HOUR, 0, 0, 0);
-  // ถ้าเลย 06:00 แล้ววันนี้ → ไปวันพรุ่งนี้
-  if (now >= next) next.setDate(next.getDate() + 1);
-  return next - now;
+  if (new Date() >= next) next.setDate(next.getDate() + 1);
+  return next;
 }
 
-function getNextRefreshTime() {
-  const now = new Date();
-  const next = new Date();
-  next.setHours(DAILY_REFRESH_HOUR, 0, 0, 0);
-  if (now >= next) next.setDate(next.getDate() + 1);
-  return next;
+function msUntilNextRefresh() {
+  return getNextRefreshTime() - new Date();
 }
 
 function scheduleNextRefresh() {
@@ -487,7 +481,7 @@ async function loadData(silent) {
     console.warn('GAS fetch failed, using embedded data:', e);
   }
 
-  btn.classList.remove('spinning');
+  if (!silent) btn.classList.remove('spinning');
   allData = data;
   applyFilters();
   renderKPI();

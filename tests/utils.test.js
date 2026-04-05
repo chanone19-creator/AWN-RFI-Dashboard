@@ -301,7 +301,7 @@ describe('calcPageRange', () => {
 // validatePageNav
 // ============================================================
 describe('validatePageNav', () => {
-  const ITEMS = PAGE_SIZE * 5; // 250 items → 5 pages
+  const ITEMS = PAGE_SIZE * 5; // 100 items → 5 pages
 
   test('returns page number for valid page', () => {
     expect(validatePageNav(3, ITEMS)).toBe(3);

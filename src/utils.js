@@ -3,7 +3,7 @@
  * Pure helper functions extracted for testability
  */
 
-const PAGE_SIZE = 50;
+const PAGE_SIZE = 20;
 
 // Interference tier lookup — single source of truth for both badge class and level label.
 // Order matters: more-specific patterns (>= -90, -105) must precede less-specific (-100).
