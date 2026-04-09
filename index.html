@@ -618,7 +618,7 @@ function makeArcLabelPlugin(values, total, pluginId) {
       c.save();
       ds.data.forEach((arc, idx) => {
         const val = values[idx];
-        if (!val || val/total < 0.04) return;
+        if (!val || !total || val/total < 0.04) return;
         const pct = Math.round(val/total*100);
         const midAngle = arc.startAngle + (arc.endAngle - arc.startAngle) / 2;
         const r = (arc.innerRadius + arc.outerRadius) / 2;
@@ -661,14 +661,14 @@ function renderDonut1() {
       cutout: '58%', responsive: true, maintainAspectRatio: true,
       plugins: {
         legend: { display: false },
-        tooltip: { callbacks: { label: (c) => ' ' + c.label + ': ' + c.raw + ' cell (' + Math.round(c.raw/total*100) + '%)' } }
+        tooltip: { callbacks: { label: (c) => ' ' + c.label + ': ' + c.raw + ' cell (' + Math.round(total ? c.raw/total*100 : 0) + '%)' } }
       }
     },
     plugins: [makeArcLabelPlugin(values, total, 'arcLabels1')]
   });
 
   document.getElementById('donut1Legend').innerHTML = LEVELS.map((l,i) => {
-    const pct = Math.round(values[i]/total*100);
+    const pct = total ? Math.round(values[i]/total*100) : 0;
     return '<div class="dl-item"><span class="dl-dot" style="background:' + colors[i] + '"></span><span class="dl-label">' + l + '</span><span class="dl-pct">' + values[i] + ' cell | ' + pct + '%</span></div>';
   }).join('');
 }
@@ -705,14 +705,14 @@ function renderDonut2() {
       cutout: '58%', responsive: true, maintainAspectRatio: true,
       plugins: {
         legend: { display: false },
-        tooltip: { callbacks: { label: (c) => ' ' + c.label + ': ' + c.raw + ' site (' + Math.round(c.raw/total*100) + '%)' } }
+        tooltip: { callbacks: { label: (c) => ' ' + c.label + ': ' + c.raw + ' site (' + Math.round(total ? c.raw/total*100 : 0) + '%)' } }
       }
     },
     plugins: [makeArcLabelPlugin(values, total, 'arcLabels2')]
   });
 
   document.getElementById('donut2Legend').innerHTML = LEVELS.map((l,i) => {
-    const pct = Math.round(values[i]/total*100);
+    const pct = total ? Math.round(values[i]/total*100) : 0;
     return '<div class="dl-item"><span class="dl-dot" style="background:' + colors[i] + '"></span><span class="dl-label">' + l + '</span><span class="dl-pct">' + values[i] + ' site | ' + pct + '%</span></div>';
   }).join('');
 }
@@ -758,7 +758,7 @@ function renderStacked() {
   };
 
   // X-axis label: province + total count + % of grand total
-  const xLabels = provinces.map((p, i) => [p, `${totals[i]} เซลล์ (${Math.round(totals[i]/grandTotal*100)}% รวม)`]);
+  const xLabels = provinces.map((p, i) => [p, `${totals[i]} เซลล์ (${grandTotal ? Math.round(totals[i]/grandTotal*100) : 0}% รวม)`]);
 
   const ctx = document.getElementById('chartStacked');
   charts['stacked'] = new Chart(ctx, {
@@ -1029,7 +1029,7 @@ function renderStatus() {
     },
     options: {
       cutout: '70%', responsive: true, maintainAspectRatio: true,
-      plugins: { legend: { display: false }, tooltip: { callbacks: { label: (c) => ` ${c.label}: ${c.raw} (${Math.round(c.raw/allData.length*100)}%)` } } }
+      plugins: { legend: { display: false }, tooltip: { callbacks: { label: (c) => ` ${c.label}: ${c.raw} (${Math.round(allData.length ? c.raw/allData.length*100 : 0)}%)` } } }
     }
   });
 
