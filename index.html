@@ -777,7 +777,7 @@ function renderStacked() {
         tooltip: { callbacks: {
           title: (items) => {
             const i = items[0].dataIndex;
-            return `${provinces[i]}  (รวม ${totals[i]} | ${Math.round(totals[i]/grandTotal*100)}% ของทั้งหมด)`;
+            return `${provinces[i]}  (รวม ${totals[i]} | ${grandTotal ? Math.round(totals[i]/grandTotal*100) : 0}% ของทั้งหมด)`;
           },
           label: (c) => {
             const colTotal = totals[c.dataIndex];
@@ -843,7 +843,7 @@ function renderHBar() {
         if (!val) return;
         const pctOfBrands = total ? Math.round(val/total*100) : 0;
         const pctOfAll    = grandTotal ? Math.round(val/grandTotal*100) : 0;
-        const { x: bx, y, height } = bar.getProps(['x','y','height'], true);
+        const { y, height } = bar.getProps(['y','height'], true);
         const xEnd = x.getPixelForValue(val);
         c.textAlign = 'left';
         c.textBaseline = 'middle';
@@ -1089,7 +1089,7 @@ function renderTable() {
       <td>${r.amphur || '—'}</td>
       <td>${r.tumbol || '—'}</td>
       <td><span class="badge ${infClass}">${infLabel}</span></td>
-      <td style="color:${parseFloat(diffVal)>25?'var(--red)':parseFloat(diffVal)>20?'var(--amber)':'var(--green)'}">${diffVal}</td>
+      <td style="color:${diffVal==='—'?'var(--text-muted)':parseFloat(diffVal)>25?'var(--red)':parseFloat(diffVal)>20?'var(--amber)':'var(--green)'}">${diffVal}</td>
       <td style="font-size:0.75rem;max-width:160px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="${(r.cause||'').replace(/"/g,"'")}">${cleanCause(r.cause) || '<span style="color:var(--text-muted)">ยังไม่ระบุ</span>'}</td>
       <td>${r.action ? r.action.replace(/\n/g,'<br>').substring(0,50) : '<span style="color:var(--text-muted)">—</span>'}</td>
       <td>${cleanCoord(r.coordAWN) || '<span style="color:var(--text-muted)">—</span>'}</td>
