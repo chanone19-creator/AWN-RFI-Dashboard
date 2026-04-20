@@ -482,7 +482,8 @@ async function loadData(silent) {
   }
 
   if (!silent) btn.classList.remove('spinning');
-  allData = data;
+  // กรองแถวที่ไม่มี siteCode และ cellName (แถวว่างที่ปนมาจากแหล่งข้อมูล)
+  allData = data.filter(r => r.siteCode || r.cellName);
   applyFilters();
   renderKPI();
   renderCharts();
