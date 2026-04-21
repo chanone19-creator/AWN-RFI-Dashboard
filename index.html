@@ -503,13 +503,18 @@ function getStatus(row) {
   return (row.action && row.action.trim()) ? 'done' : 'pending';
 }
 
-function getInfClass(inf) {
-  if (!inf) return 'badge-inf105';
-  if (inf.includes('>= -90')) return 'badge-inf90';
-  if (inf.includes('-105')) return 'badge-inf105';
-  if (inf.includes('-100')) return 'badge-inf100';
-  return 'badge-inf105';
+// Order matters: '>= -90' must precede '-105'/'-100' to avoid substring false-matches
+const INF_TIER_MAP = [
+  { test: '>= -90', badge: 'badge-inf90',  level: 'INF≥-90'       },
+  { test: '-105',   badge: 'badge-inf105', level: '-105≤INF<-100' },
+  { test: '-100',   badge: 'badge-inf100', level: '-100≤INF<-90'  },
+];
+function getTier(inf) {
+  if (!inf) return null;
+  return INF_TIER_MAP.find(t => inf.includes(t.test)) || null;
 }
+function getInfClass(inf) { const t = getTier(inf); return t ? t.badge : 'badge-inf105'; }
+
 
 // ============================================================
 // VIEW COUNT
@@ -551,9 +556,12 @@ function formatInfLabel(inf) {
 // ============================================================
 function renderKPI() {
   const total = allData.length;
-  const done = allData.filter(r => getStatus(r) === 'done').length;
+  let done = 0, identified = 0;
+  allData.forEach(r => {
+    if (getStatus(r) === 'done') done++;
+    if (r.cause && r.cause.trim()) identified++;
+  });
   const pending = total - done;
-  const identified = allData.filter(r => r.cause && r.cause.trim()).length;
   const pct = total ? Math.round(done/total*100) : 0;
 
   const kpis = [
@@ -602,13 +610,7 @@ function renderCharts() {
 }
 
 // Interference Donut helpers
-function getInfLevel(inf) {
-  if (!inf) return 'ไม่ระบุ';
-  if (inf.includes('>= -90')) return 'INF≥-90';
-  if (inf.includes('-105'))   return '-105≤INF<-100';
-  if (inf.includes('-100'))   return '-100≤INF<-90';
-  return 'ไม่ระบุ';
-}
+function getInfLevel(inf) { const t = getTier(inf); return t ? t.level : 'ไม่ระบุ'; }
 
 function makeArcLabelPlugin(values, total, pluginId) {
   return {
@@ -721,9 +723,11 @@ function renderDonut2() {
 function renderStacked() {
   destroyChart('stacked');
   const provinces = ['สมุทรสาคร','นครปฐม','ราชบุรี','เพชรบุรี','สมุทรสงคราม'];
-  const done    = provinces.map(p => allData.filter(r => r.province===p && getStatus(r)==='done').length);
-  const pending = provinces.map(p => allData.filter(r => r.province===p && getStatus(r)==='pending').length);
-  const totals  = provinces.map((_,i) => done[i] + pending[i]);
+  const acc = Object.fromEntries(provinces.map(p => [p, { done: 0, pending: 0 }]));
+  allData.forEach(r => { if (acc[r.province]) acc[r.province][getStatus(r)]++; });
+  const done    = provinces.map(p => acc[p].done);
+  const pending = provinces.map(p => acc[p].pending);
+  const totals  = provinces.map(p => acc[p].done + acc[p].pending);
   const grandTotal = allData.length;
 
   // Custom inline % label plugin
@@ -740,7 +744,7 @@ function renderStacked() {
           const colTotal = totals[idx];
           const pctOfCol  = colTotal ? Math.round(val/colTotal*100) : 0;
           const pctOfAll  = grandTotal ? Math.round(val/grandTotal*100) : 0;
-          const { x, y, width, height } = bar.getProps(['x','y','width','height'], true);
+          const { x, y, height } = bar.getProps(['x','y','height'], true);
           // Only show label if bar is tall enough
           if (Math.abs(height) < 18) return;
           c.textAlign = 'center';
@@ -915,7 +919,7 @@ function renderMonths() {
         if (!val) return;
         const pctOfDone = total ? Math.round(val/total*100) : 0;
         const pctOfAll  = grandTotal ? Math.round(val/grandTotal*100) : 0;
-        const { x, y, width } = bar.getProps(['x','y','width'], true);
+        const { x, y } = bar.getProps(['x','y'], true);
         c.textAlign = 'center';
         c.textBaseline = 'bottom';
         c.font = `700 11px Sarabun, sans-serif`;
