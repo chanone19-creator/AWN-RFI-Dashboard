@@ -419,12 +419,17 @@ const DAILY_REFRESH_HOUR = 6; // อัพเดทอัตโนมัติ�
 let scheduleTimer = null;
 let countdownTimer = null;
 
-window.addEventListener('DOMContentLoaded', () => {
+function _init() {
   updateViewCountDisplay(incrementViewCount());
   loadData();
   scheduleNextRefresh();
   startCountdown();
-});
+}
+if (document.readyState === 'loading') {
+  window.addEventListener('DOMContentLoaded', _init);
+} else {
+  _init();
+}
 
 // คำนวณเวลา 06:00 น. ถัดไป (วันนี้ถ้ายังไม่ถึง, ไม่งั้นพรุ่งนี้)
 function getNextRefreshTime() {
@@ -1020,7 +1025,8 @@ function renderCoord() {
 // Status doughnut
 function renderStatus() {
   destroyChart('status');
-  const done = allData.filter(r => getStatus(r)==='done').length;
+  let done = 0;
+  allData.forEach(r => { if (getStatus(r) === 'done') done++; });
   const pending = allData.length - done;
   const pct = allData.length ? Math.round(done/allData.length*100) : 0;
   document.getElementById('statusPct').textContent = pct + '%';
@@ -1086,6 +1092,8 @@ function renderTable() {
     const infClass = getInfClass(r.interference);
     const infLabel = formatInfLabel(r.interference);
     const diffVal = r.diff ? r.diff.toFixed(2) : '—';
+    const diffNum = diffVal === '—' ? null : parseFloat(diffVal);
+    const diffColor = diffNum === null ? 'var(--text-muted)' : diffNum > 25 ? 'var(--red)' : diffNum > 20 ? 'var(--amber)' : 'var(--green)';
     return `<tr>
       <td style="color:var(--text-muted)">${start+idx+1}</td>
       <td>${r.siteCode || '—'}</td>
@@ -1094,7 +1102,7 @@ function renderTable() {
       <td>${r.amphur || '—'}</td>
       <td>${r.tumbol || '—'}</td>
       <td><span class="badge ${infClass}">${infLabel}</span></td>
-      <td style="color:${diffVal==='—'?'var(--text-muted)':parseFloat(diffVal)>25?'var(--red)':parseFloat(diffVal)>20?'var(--amber)':'var(--green)'}">${diffVal}</td>
+      <td style="color:${diffColor}">${diffVal}</td>
       <td style="font-size:0.75rem;max-width:160px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="${(r.cause||'').replace(/"/g,"'")}">${cleanCause(r.cause) || '<span style="color:var(--text-muted)">ยังไม่ระบุ</span>'}</td>
       <td>${r.action ? r.action.replace(/\n/g,'<br>').substring(0,50) : '<span style="color:var(--text-muted)">—</span>'}</td>
       <td>${cleanCoord(r.coordAWN) || '<span style="color:var(--text-muted)">—</span>'}</td>
@@ -1116,7 +1124,7 @@ function renderPagination(total) {
   const range = [];
   for (let i = 1; i <= pages; i++) {
     if (i === 1 || i === pages || (i >= currentPage-2 && i <= currentPage+2)) range.push(i);
-    else if (range[range.length-1] !== '...') range.push('...');
+    else if (range.length > 0 && range[range.length-1] !== '...') range.push('...');
   }
   range.forEach(p => {
     if (p === '...') html += `<span class="pg-btn" style="pointer-events:none">…</span>`;
@@ -1132,7 +1140,7 @@ function goPage(p) {
   if (p < 1 || p > pages) return;
   currentPage = p;
   renderTable();
-  document.querySelector('.table-card').scrollIntoView({ behavior: 'smooth', block: 'start' });
+  document.querySelector('.table-card')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
 }
 </script>
 </body>
