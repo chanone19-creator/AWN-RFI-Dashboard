@@ -472,8 +472,7 @@ function updateCountdownDisplay() {
 }
 
 async function loadData(silent) {
-  const btn = document.getElementById('btnRefresh');
-  if (!silent) btn.classList.add('spinning');
+  if (!silent) document.getElementById('btnRefresh')?.classList.add('spinning');
 
   let data = EMBEDDED_DATA;
   try {
@@ -486,7 +485,7 @@ async function loadData(silent) {
     console.warn('GAS fetch failed, using embedded data:', e);
   }
 
-  if (!silent) btn.classList.remove('spinning');
+  if (!silent) document.getElementById('btnRefresh')?.classList.remove('spinning');
   // กรองแถวที่ไม่มี siteCode และ cellName (แถวว่างที่ปนมาจากแหล่งข้อมูล)
   allData = data.filter(r => r.siteCode || r.cellName);
   applyFilters();
@@ -496,8 +495,7 @@ async function loadData(silent) {
 }
 
 function refreshData() {
-  const btn = document.getElementById('btnRefresh');
-  btn.classList.add('spinning');
+  document.getElementById('btnRefresh')?.classList.add('spinning');
   loadData();
 }
 
@@ -514,6 +512,9 @@ const INF_TIER_MAP = [
   { test: '-105',   badge: 'badge-inf105', level: '-105≤INF<-100' },
   { test: '-100',   badge: 'badge-inf100', level: '-100≤INF<-90'  },
 ];
+// Derived from INF_TIER_MAP so label order and priority stay in sync
+const INF_LEVELS   = [...INF_TIER_MAP.map(t => t.level), 'ไม่ระบุ'];
+const INF_PRIORITY = Object.fromEntries(INF_TIER_MAP.map((t, i) => [t.level, INF_TIER_MAP.length - i]).concat([['ไม่ระบุ', 0]]));
 function getTier(inf) {
   if (!inf) return null;
   return INF_TIER_MAP.find(t => inf.includes(t.test)) || null;
@@ -649,13 +650,10 @@ function makeArcLabelPlugin(values, total, pluginId) {
 // Donut 1: Cell count (all rows)
 function renderDonut1() {
   destroyChart('donut1');
-  const LEVELS = ['INF≥-90', '-100≤INF<-90', '-105≤INF<-100', 'ไม่ระบุ'];
-  const counts = { 'INF≥-90': 0, '-100≤INF<-90': 0, '-105≤INF<-100': 0, 'ไม่ระบุ': 0 };
-  allData.forEach(r => {
-    counts[getInfLevel(r.interference || '')]++;
-  });
+  const counts = Object.fromEntries(INF_LEVELS.map(l => [l, 0]));
+  allData.forEach(r => { counts[getInfLevel(r.interference || '')]++; });
 
-  const values = LEVELS.map(l => counts[l]);
+  const values = INF_LEVELS.map(l => counts[l]);
   const total = values.reduce((a,b)=>a+b,0);
   const colors = [COLORS.red, COLORS.amber, COLORS.green, COLORS.teal];
 
@@ -675,7 +673,7 @@ function renderDonut1() {
     plugins: [makeArcLabelPlugin(values, total, 'arcLabels1')]
   });
 
-  document.getElementById('donut1Legend').innerHTML = LEVELS.map((l,i) => {
+  document.getElementById('donut1Legend').innerHTML = INF_LEVELS.map((l,i) => {
     const pct = total ? Math.round(values[i]/total*100) : 0;
     return '<div class="dl-item"><span class="dl-dot" style="background:' + colors[i] + '"></span><span class="dl-label">' + l + '</span><span class="dl-pct">' + values[i] + ' cell | ' + pct + '%</span></div>';
   }).join('');
@@ -684,22 +682,20 @@ function renderDonut1() {
 // Donut 2: Unique Site Code count (deduplicated)
 function renderDonut2() {
   destroyChart('donut2');
-  const LEVELS = ['INF≥-90', '-100≤INF<-90', '-105≤INF<-100', 'ไม่ระบุ'];
   // Each site goes to its WORST (highest priority) level
-  const priority = { 'INF≥-90': 3, '-100≤INF<-90': 2, '-105≤INF<-100': 1, 'ไม่ระบุ': 0 };
   const siteLevel = {};
   allData.forEach(r => {
     const site = r.siteCode;
     if (!site) return;
     const lv = getInfLevel(r.interference || '');
-    if (!siteLevel[site] || priority[lv] > priority[siteLevel[site]]) {
+    if (!siteLevel[site] || INF_PRIORITY[lv] > INF_PRIORITY[siteLevel[site]]) {
       siteLevel[site] = lv;
     }
   });
-  const counts2 = { 'INF≥-90': 0, '-100≤INF<-90': 0, '-105≤INF<-100': 0, 'ไม่ระบุ': 0 };
-  Object.entries(siteLevel).forEach(([site, lv]) => { counts2[lv]++; });
+  const counts2 = Object.fromEntries(INF_LEVELS.map(l => [l, 0]));
+  Object.values(siteLevel).forEach(lv => { counts2[lv]++; });
 
-  const values = LEVELS.map(l => counts2[l]);
+  const values = INF_LEVELS.map(l => counts2[l]);
   const total = values.reduce((a,b)=>a+b,0);
   const colors = [COLORS.red, COLORS.amber, COLORS.green, COLORS.teal];
 
@@ -708,7 +704,7 @@ function renderDonut2() {
   const ctx = document.getElementById('chartDonut2');
   charts['donut2'] = new Chart(ctx, {
     type: 'doughnut',
-    data: { labels: LEVELS, datasets: [{ data: values, backgroundColor: colors, borderWidth: 2, borderColor: '#061422' }] },
+    data: { labels: INF_LEVELS, datasets: [{ data: values, backgroundColor: colors, borderWidth: 2, borderColor: '#061422' }] },
     options: {
       cutout: '58%', responsive: true, maintainAspectRatio: true,
       plugins: {
@@ -719,7 +715,7 @@ function renderDonut2() {
     plugins: [makeArcLabelPlugin(values, total, 'arcLabels2')]
   });
 
-  document.getElementById('donut2Legend').innerHTML = LEVELS.map((l,i) => {
+  document.getElementById('donut2Legend').innerHTML = INF_LEVELS.map((l,i) => {
     const pct = total ? Math.round(values[i]/total*100) : 0;
     return '<div class="dl-item"><span class="dl-dot" style="background:' + colors[i] + '"></span><span class="dl-label">' + l + '</span><span class="dl-pct">' + values[i] + ' site | ' + pct + '%</span></div>';
   }).join('');
