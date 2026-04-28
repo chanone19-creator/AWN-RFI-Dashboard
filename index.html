@@ -75,12 +75,15 @@ body::before {
 @keyframes pulse { 0%,100%{opacity:1;transform:scale(1)} 50%{opacity:0.4;transform:scale(0.8)} }
 .update-time { font-size: 0.75rem; color: var(--text-muted); }
 .badge-views {
-  display: flex; align-items: center; gap: 6px;
-  padding: 5px 12px; border-radius: 20px;
+  display: flex; align-items: center; gap: 8px;
+  padding: 6px 14px; border-radius: 20px;
   background: var(--purple-dim); border: 1px solid rgba(168,85,247,0.3);
-  font-size: 0.75rem; color: var(--purple); font-weight: 600;
+  color: var(--purple);
 }
-.badge-views svg { opacity: 0.85; }
+.badge-views svg { opacity: 0.85; flex-shrink: 0; }
+.badge-views-text { display: flex; flex-direction: column; align-items: center; line-height: 1.15; }
+.badge-views-count { font-size: 1.05rem; font-weight: 800; letter-spacing: -0.5px; }
+.badge-views-label { font-size: 0.58rem; font-weight: 400; opacity: 0.72; letter-spacing: 0.2px; }
 .btn-refresh {
   padding: 7px 16px; border-radius: 8px; cursor: pointer;
   background: var(--cyan-dim); border: 1px solid var(--border-glow);
@@ -291,8 +294,11 @@ tbody td:first-child { color: var(--text-primary); font-weight: 600; }
         <span class="update-time" id="nextUpdateTime" style="font-size:0.68rem;color:var(--text-muted)">อัพเดทอัตโนมัติ: —</span>
       </div>
       <div class="badge-views">
-        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
-        <span id="viewCount">—</span> ครั้ง
+        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
+        <div class="badge-views-text">
+          <span id="viewCount" class="badge-views-count">—</span>
+          <span class="badge-views-label">เข้าชมตั้งแต่แรก</span>
+        </div>
       </div>
       <div class="badge-live"><span class="dot"></span>LIVE</div>
       <button class="btn-refresh" id="btnRefresh" onclick="refreshData()">
