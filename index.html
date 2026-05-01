@@ -1057,7 +1057,6 @@ function renderStatus() {
 // ============================================================
 function setFilter(filter, btn) {
   currentFilter = filter;
-  currentPage = 1;
   document.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active'));
   btn.classList.add('active');
   applyFilters();
@@ -1069,8 +1068,8 @@ function applyFilters() {
     // Status filter
     if (currentFilter === 'done' && getStatus(r) !== 'done') return false;
     if (currentFilter === 'pending' && getStatus(r) !== 'pending') return false;
-    if (currentFilter === 'inf90'  && getInfClass(r.interference||'') !== 'badge-inf90')  return false;
-    if (currentFilter === 'inf100' && getInfClass(r.interference||'') !== 'badge-inf100') return false;
+    if (currentFilter === 'inf90'  && getInfLevel(r.interference||'') !== 'INF≥-90')      return false;
+    if (currentFilter === 'inf100' && getInfLevel(r.interference||'') !== '-100≤INF<-90') return false;
     // Search
     if (search) {
       const haystack = [r.siteCode, r.cellName, r.province, r.amphur, r.tumbol, r.cause, r.coordAWN]
@@ -1106,7 +1105,7 @@ function renderTable() {
       <td><span class="badge ${infClass}">${infLabel}</span></td>
       <td style="color:${diffColor}">${diffVal}</td>
       <td style="font-size:0.75rem;max-width:160px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="${(r.cause||'').replace(/"/g,"'")}">${cleanCause(r.cause) || '<span style="color:var(--text-muted)">ยังไม่ระบุ</span>'}</td>
-      <td>${r.action ? r.action.replace(/\n/g,'<br>').substring(0,50) : '<span style="color:var(--text-muted)">—</span>'}</td>
+      <td>${r.action ? r.action.substring(0,50).replace(/\n/g,'<br>') : '<span style="color:var(--text-muted)">—</span>'}</td>
       <td>${cleanCoord(r.coordAWN) || '<span style="color:var(--text-muted)">—</span>'}</td>
       <td><span class="badge ${status==='done'?'badge-done':'badge-pending'}">${status==='done'?'✅ แล้ว':'⏳ รอ'}</span></td>
     </tr>`;
