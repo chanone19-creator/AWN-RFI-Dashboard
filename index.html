@@ -466,12 +466,12 @@ function startCountdown() {
 }
 
 function updateCountdownDisplay() {
-  const ms = msUntilNextRefresh();
+  const next = getNextRefreshTime();
+  const ms = next - new Date();
   const h = Math.floor(ms / 3600000);
   const m = Math.floor((ms % 3600000) / 60000);
   const s = Math.floor((ms % 60000) / 1000);
   const pad = n => String(n).padStart(2,'0');
-  const next = getNextRefreshTime();
   const dateStr = next.toLocaleDateString('th-TH', { day:'numeric', month:'short' });
   const el = document.getElementById('nextUpdateTime');
   if (el) el.textContent = 'อัพเดทอัตโนมัติ: ' + dateStr + ' 06:00 น. (อีก ' + pad(h) + ':' + pad(m) + ':' + pad(s) + ')';
@@ -606,6 +606,10 @@ const COLORS = {
   pink: '#ec4899', teal: '#14b8a6', orange: '#f97316', indigo: '#6366f1'
 };
 const PALETTE = Object.values(COLORS);
+// INF donut slices: red=INF≥-90, amber=-100≤INF<-90, green=-105≤INF<-100, teal=ไม่ระบุ
+const INF_DONUT_COLORS = [COLORS.red, COLORS.amber, COLORS.green, COLORS.teal];
+// Coordinator bar: 8 distinct colours, shared by backgroundColor (+opacity) and borderColor
+const COORD_COLORS = [COLORS.cyan, COLORS.purple, COLORS.green, COLORS.amber, COLORS.red, COLORS.pink, COLORS.teal, COLORS.indigo];
 
 function destroyChart(id) {
   if (charts[id]) { charts[id].destroy(); delete charts[id]; }
@@ -661,14 +665,13 @@ function renderDonut1() {
 
   const values = INF_LEVELS.map(l => counts[l]);
   const total = values.reduce((a,b)=>a+b,0);
-  const colors = [COLORS.red, COLORS.amber, COLORS.green, COLORS.teal];
 
   document.getElementById('donut1Total').textContent = total;
 
   const ctx = document.getElementById('chartDonut1');
   charts['donut1'] = new Chart(ctx, {
     type: 'doughnut',
-    data: { labels: LEVELS, datasets: [{ data: values, backgroundColor: colors, borderWidth: 2, borderColor: '#061422' }] },
+    data: { labels: INF_LEVELS, datasets: [{ data: values, backgroundColor: INF_DONUT_COLORS, borderWidth: 2, borderColor: '#061422' }] },
     options: {
       cutout: '58%', responsive: true, maintainAspectRatio: true,
       plugins: {
@@ -681,7 +684,7 @@ function renderDonut1() {
 
   document.getElementById('donut1Legend').innerHTML = INF_LEVELS.map((l,i) => {
     const pct = total ? Math.round(values[i]/total*100) : 0;
-    return '<div class="dl-item"><span class="dl-dot" style="background:' + colors[i] + '"></span><span class="dl-label">' + l + '</span><span class="dl-pct">' + values[i] + ' cell | ' + pct + '%</span></div>';
+    return '<div class="dl-item"><span class="dl-dot" style="background:' + INF_DONUT_COLORS[i] + '"></span><span class="dl-label">' + l + '</span><span class="dl-pct">' + values[i] + ' cell | ' + pct + '%</span></div>';
   }).join('');
 }
 
@@ -703,14 +706,13 @@ function renderDonut2() {
 
   const values = INF_LEVELS.map(l => counts2[l]);
   const total = values.reduce((a,b)=>a+b,0);
-  const colors = [COLORS.red, COLORS.amber, COLORS.green, COLORS.teal];
 
   document.getElementById('donut2Total').textContent = total;
 
   const ctx = document.getElementById('chartDonut2');
   charts['donut2'] = new Chart(ctx, {
     type: 'doughnut',
-    data: { labels: INF_LEVELS, datasets: [{ data: values, backgroundColor: colors, borderWidth: 2, borderColor: '#061422' }] },
+    data: { labels: INF_LEVELS, datasets: [{ data: values, backgroundColor: INF_DONUT_COLORS, borderWidth: 2, borderColor: '#061422' }] },
     options: {
       cutout: '58%', responsive: true, maintainAspectRatio: true,
       plugins: {
@@ -723,7 +725,7 @@ function renderDonut2() {
 
   document.getElementById('donut2Legend').innerHTML = INF_LEVELS.map((l,i) => {
     const pct = total ? Math.round(values[i]/total*100) : 0;
-    return '<div class="dl-item"><span class="dl-dot" style="background:' + colors[i] + '"></span><span class="dl-label">' + l + '</span><span class="dl-pct">' + values[i] + ' site | ' + pct + '%</span></div>';
+    return '<div class="dl-item"><span class="dl-dot" style="background:' + INF_DONUT_COLORS[i] + '"></span><span class="dl-label">' + l + '</span><span class="dl-pct">' + values[i] + ' site | ' + pct + '%</span></div>';
   }).join('');
 }
 // Province Stacked Bar
@@ -1005,8 +1007,8 @@ function renderCoord() {
       labels,
       datasets: [{
         data: values,
-        backgroundColor: [COLORS.cyan, COLORS.purple, COLORS.green, COLORS.amber, COLORS.red, COLORS.pink, COLORS.teal, COLORS.indigo].map(c=>c+'99'),
-        borderColor: [COLORS.cyan, COLORS.purple, COLORS.green, COLORS.amber, COLORS.red, COLORS.pink, COLORS.teal, COLORS.indigo],
+        backgroundColor: COORD_COLORS.map(c=>c+'99'),
+        borderColor: COORD_COLORS,
         borderWidth: 1, borderRadius: 6
       }]
     },
