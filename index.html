@@ -519,8 +519,10 @@ const INF_TIER_MAP = [
   { test: '-100',   badge: 'badge-inf100', level: '-100≤INF<-90'  },
 ];
 // Derived from INF_TIER_MAP so label order and priority stay in sync
-const INF_LEVELS   = [...INF_TIER_MAP.map(t => t.level), 'ไม่ระบุ'];
-const INF_PRIORITY = Object.fromEntries(INF_TIER_MAP.map((t, i) => [t.level, INF_TIER_MAP.length - i]).concat([['ไม่ระบุ', 0]]));
+// INF_TIER_MAP order is driven by pattern-match safety (>= -90, then -105, then -100);
+// severity order differs, so INF_LEVELS and INF_PRIORITY must be declared explicitly.
+const INF_LEVELS   = ['INF≥-90', '-100≤INF<-90', '-105≤INF<-100', 'ไม่ระบุ'];
+const INF_PRIORITY = { 'INF≥-90': 3, '-100≤INF<-90': 2, '-105≤INF<-100': 1, 'ไม่ระบุ': 0 };
 function getTier(inf) {
   if (!inf) return null;
   return INF_TIER_MAP.find(t => inf.includes(t.test)) || null;
@@ -743,7 +745,7 @@ function renderStacked() {
   const labelPlugin = {
     id: 'stackedLabels',
     afterDatasetsDraw(chart) {
-      const { ctx: c, data } = chart;
+      const { ctx: c } = chart;
       c.save();
       chart.data.datasets.forEach((ds, dsIdx) => {
         const meta = chart.getDatasetMeta(dsIdx);
