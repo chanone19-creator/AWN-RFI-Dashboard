@@ -439,9 +439,10 @@ if (document.readyState === 'loading') {
 
 // คำนวณเวลา 06:00 น. ถัดไป (วันนี้ถ้ายังไม่ถึง, ไม่งั้นพรุ่งนี้)
 function getNextRefreshTime() {
-  const next = new Date();
+  const now = new Date();
+  const next = new Date(now);
   next.setHours(DAILY_REFRESH_HOUR, 0, 0, 0);
-  if (new Date() >= next) next.setDate(next.getDate() + 1);
+  if (now >= next) next.setDate(next.getDate() + 1);
   return next;
 }
 
@@ -1096,7 +1097,7 @@ function renderTable() {
     const status = getStatus(r);
     const infClass = getInfClass(r.interference);
     const infLabel = formatInfLabel(r.interference);
-    const diffVal = r.diff ? r.diff.toFixed(2) : '—';
+    const diffVal = r.diff != null ? r.diff.toFixed(2) : '—';
     const diffNum = diffVal === '—' ? null : parseFloat(diffVal);
     const diffColor = diffNum === null ? 'var(--text-muted)' : diffNum > 25 ? 'var(--red)' : diffNum > 20 ? 'var(--amber)' : 'var(--green)';
     return `<tr>
