@@ -498,7 +498,8 @@ async function loadData(silent) {
   applyFilters();
   renderKPI();
   renderCharts();
-  document.getElementById('updateTime').textContent = 'อัพเดทล่าสุด: ' + new Date().toLocaleTimeString('th-TH');
+  const elUpdate = document.getElementById('updateTime');
+  if (elUpdate) elUpdate.textContent = 'อัพเดทล่าสุด: ' + new Date().toLocaleTimeString('th-TH');
 }
 
 function refreshData() {
@@ -519,7 +520,6 @@ const INF_TIER_MAP = [
   { test: '-105',   badge: 'badge-inf105', level: '-105≤INF<-100' },
   { test: '-100',   badge: 'badge-inf100', level: '-100≤INF<-90'  },
 ];
-// Derived from INF_TIER_MAP so label order and priority stay in sync
 // INF_TIER_MAP order is driven by pattern-match safety (>= -90, then -105, then -100);
 // severity order differs, so INF_LEVELS and INF_PRIORITY must be declared explicitly.
 const INF_LEVELS   = ['INF≥-90', '-100≤INF<-90', '-105≤INF<-100', 'ไม่ระบุ'];
@@ -593,7 +593,7 @@ function renderKPI() {
         <div class="kpi-label">${k.label}</div>
         <div class="kpi-icon">${k.icon}</div>
       </div>
-      <div class="kpi-value">${k.value.toLocaleString()}</div>
+      <div class="kpi-value">${k.value.toLocaleString('th-TH')}</div>
       <div class="kpi-sub">${k.sub}</div>
       <div class="progress-bar"><div class="progress-fill" style="width:${k.pct}%"></div></div>
     </div>
@@ -1117,7 +1117,7 @@ function renderTable() {
   }).join('');
 
   document.getElementById('tableCount').textContent = totalFiltered
-    ? `แสดง ${start+1}–${Math.min(start+PAGE_SIZE, totalFiltered)} จาก ${totalFiltered.toLocaleString()} รายการ`
+    ? `แสดง ${start+1}–${Math.min(start+PAGE_SIZE, totalFiltered)} จาก ${totalFiltered.toLocaleString('th-TH')} รายการ`
     : 'ไม่พบข้อมูล';
   renderPagination(totalFiltered);
 }
