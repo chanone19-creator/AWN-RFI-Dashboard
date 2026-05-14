@@ -268,6 +268,7 @@ tbody td:first-child { color: var(--text-primary); font-weight: 600; }
   .wrapper { padding: 12px 10px 30px; }
   .search-box input { width: 150px; }
 }
+.visually-hidden { position:absolute; width:1px; height:1px; padding:0; margin:-1px; overflow:hidden; clip:rect(0,0,0,0); border:0; }
 </style>
 </head>
 <body>
@@ -302,33 +303,33 @@ tbody td:first-child { color: var(--text-primary); font-weight: 600; }
     <div class="chart-card col-4" id="card-interference">
       <div class="chart-title cyan"><span class="dot"></span>ระดับการรบกวน (Interference)</div>
       <div class="chart-subtitle">นับจำนวน Cell ทั้งหมด</div>
-      <div class="doughnut-wrap"><canvas id="chartDonut1"></canvas><div class="doughnut-center"><div class="big" id="donut1Total">—</div><div class="small">Cell ทั้งหมด</div></div></div>
+      <div class="doughnut-wrap"><canvas id="chartDonut1" role="img" aria-label="กราฟวงกลมระดับการรบกวน"></canvas><div class="doughnut-center"><div class="big" id="donut1Total">—</div><div class="small">Cell ทั้งหมด</div></div></div>
       <div class="doughnut-legend" id="donut1Legend"></div>
       <div style="border-top:1px solid var(--border);margin:16px 0;"></div>
       <div class="chart-title green" style="margin-bottom:10px;"><span class="dot"></span>Site Code (ไม่นับซ้ำ)</div>
       <div class="chart-subtitle">นับ Site Code ที่ไม่ซ้ำกัน</div>
-      <div class="doughnut-wrap"><canvas id="chartDonut2"></canvas><div class="doughnut-center"><div class="big" id="donut2Total">—</div><div class="small">Site ไม่ซ้ำ</div></div></div>
+      <div class="doughnut-wrap"><canvas id="chartDonut2" role="img" aria-label="กราฟวงกลม Site Code ไม่ซ้ำ"></canvas><div class="doughnut-center"><div class="big" id="donut2Total">—</div><div class="small">Site ไม่ซ้ำ</div></div></div>
       <div class="doughnut-legend" id="donut2Legend"></div>
     </div>
     <div class="chart-card col-8" id="card-province">
       <div class="chart-title purple"><span class="dot"></span>สถานะดำเนินการตามจังหวัด (Stacked)</div>
-      <div class="chart-wrap"><canvas id="chartStacked" height="180"></canvas></div>
+      <div class="chart-wrap"><canvas id="chartStacked" height="180" role="img" aria-label="กราฟแท่งสถานะดำเนินการตามจังหวัด"></canvas></div>
     </div>
     <div class="chart-card col-6" id="card-brands">
       <div class="chart-title amber"><span class="dot"></span>แบรนด์อุปกรณ์รบกวน (Horizontal Bar)</div>
-      <div class="chart-wrap"><canvas id="chartHBar"></canvas></div>
+      <div class="chart-wrap"><canvas id="chartHBar" role="img" aria-label="กราฟแนวนอนแบรนด์อุปกรณ์รบกวน"></canvas></div>
     </div>
     <div class="chart-card col-6" id="card-months">
       <div class="chart-title green"><span class="dot"></span>การดำเนินการรายเดือน</div>
-      <div class="chart-wrap"><canvas id="chartMonths" height="200"></canvas></div>
+      <div class="chart-wrap"><canvas id="chartMonths" height="200" role="img" aria-label="กราฟการดำเนินการรายเดือน"></canvas></div>
     </div>
     <div class="chart-card col-6" id="card-coordinator">
       <div class="chart-title cyan"><span class="dot"></span>ภาระงานผู้ประสานงาน AWN</div>
-      <div class="chart-wrap"><canvas id="chartCoord" height="160"></canvas></div>
+      <div class="chart-wrap"><canvas id="chartCoord" height="160" role="img" aria-label="กราฟภาระงานผู้ประสานงาน AWN"></canvas></div>
     </div>
     <div class="chart-card col-6" id="card-status">
       <div class="chart-title purple"><span class="dot"></span>สถานะภาพรวม (Status)</div>
-      <div class="doughnut-wrap" style="width:140px;height:140px"><canvas id="chartStatus"></canvas><div class="doughnut-center"><div class="big" id="statusPct">—%</div><div class="small">ดำเนินการแล้ว</div></div></div>
+      <div class="doughnut-wrap" style="width:140px;height:140px"><canvas id="chartStatus" role="img" aria-label="กราฟวงกลมสถานะภาพรวม"></canvas><div class="doughnut-center"><div class="big" id="statusPct">—%</div><div class="small">ดำเนินการแล้ว</div></div></div>
       <div class="doughnut-legend" id="statusLegend"></div>
     </div>
   </div>
@@ -349,7 +350,8 @@ tbody td:first-child { color: var(--text-primary); font-weight: 600; }
           </div>
           <div class="search-box">
             <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg>
-            <input type="text" id="searchInput" placeholder="ค้นหา Site, จังหวัด..." oninput="applyFilters()">
+            <label for="searchInput" class="visually-hidden">ค้นหาข้อมูล</label>
+            <input type="text" id="searchInput" placeholder="ค้นหา Site, จังหวัด..." aria-label="ค้นหาข้อมูล">
           </div>
         </div>
       </div>
@@ -411,6 +413,7 @@ let scheduleTimer = null;
 let countdownTimer = null;
 
 window.addEventListener('DOMContentLoaded', () => {
+  document.getElementById('searchInput').addEventListener('input', debounce(() => applyFilters(), 300));
   loadData();
   scheduleNextRefresh();
   startCountdown();
@@ -477,8 +480,8 @@ async function loadData(silent) {
     console.warn('GAS fetch failed, using embedded data:', e);
   }
 
-  btn.classList.remove('spinning');
-  allData = data;
+  if (!silent) btn.classList.remove('spinning');
+  allData = data.filter(r => r.siteCode && r.siteCode.trim());
   applyFilters();
   renderKPI();
   renderCharts();
@@ -514,6 +517,15 @@ function cleanCoord(name) {
 function cleanCause(cause) {
   if (!cause) return '';
   return cause.replace(/\n/g, ', ').replace(/\s+/g, ' ').trim().substring(0, 50);
+}
+
+function escapeHtml(str) {
+  return String(str).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
+
+function debounce(fn, delay) {
+  let t;
+  return (...args) => { clearTimeout(t); t = setTimeout(() => fn(...args), delay); };
 }
 
 // ============================================================
@@ -648,9 +660,6 @@ function renderDonut1() {
 function renderDonut2() {
   destroyChart('donut2');
   const LEVELS = ['INF≥-90', '-100≤INF<-90', '-105≤INF<-100', 'ไม่ระบุ'];
-  const siteSets = { 'INF≥-90': new Set(), '-100≤INF<-90': new Set(), '-105≤INF<-100': new Set(), 'ไม่ระบุ': new Set() };
-
-  // Each site goes to its WORST (highest priority) level
   const priority = { 'INF≥-90': 3, '-100≤INF<-90': 2, '-105≤INF<-100': 1, 'ไม่ระบุ': 0 };
   const siteLevel = {};
   allData.forEach(r => {
@@ -661,8 +670,6 @@ function renderDonut2() {
       siteLevel[site] = lv;
     }
   });
-  Object.values(siteLevel).forEach(lv => siteSets[lv].add(lv));
-  // count properly
   const counts2 = { 'INF≥-90': 0, '-100≤INF<-90': 0, '-105≤INF<-100': 0, 'ไม่ระบุ': 0 };
   Object.entries(siteLevel).forEach(([site, lv]) => { counts2[lv]++; });
 
@@ -1066,8 +1073,8 @@ function renderTable() {
       <td>${r.tumbol || '—'}</td>
       <td><span class="badge ${infClass}">${infLabel}</span></td>
       <td style="color:${parseFloat(diffVal)>25?'var(--red)':parseFloat(diffVal)>20?'var(--amber)':'var(--green)'}">${diffVal}</td>
-      <td style="font-size:0.75rem;max-width:160px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="${(r.cause||'').replace(/"/g,"'")}">${cleanCause(r.cause) || '<span style="color:var(--text-muted)">ยังไม่ระบุ</span>'}</td>
-      <td>${r.action ? r.action.replace(/\n/g,'<br>').substring(0,50) : '<span style="color:var(--text-muted)">—</span>'}</td>
+      <td style="font-size:0.75rem;max-width:160px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="${escapeHtml(r.cause||'')}">${cleanCause(r.cause) || '<span style="color:var(--text-muted)">ยังไม่ระบุ</span>'}</td>
+      <td>${r.action ? escapeHtml(r.action).replace(/\n/g,'<br>').substring(0,80) : '<span style="color:var(--text-muted)">—</span>'}</td>
       <td>${cleanCoord(r.coordAWN) || '<span style="color:var(--text-muted)">—</span>'}</td>
       <td><span class="badge ${status==='done'?'badge-done':'badge-pending'}">${status==='done'?'✅ แล้ว':'⏳ รอ'}</span></td>
     </tr>`;
