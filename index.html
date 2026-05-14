@@ -74,6 +74,7 @@ body::before {
 .badge-live .dot { width: 7px; height: 7px; border-radius: 50%; background: var(--green); animation: pulse 1.5s infinite; }
 @keyframes pulse { 0%,100%{opacity:1;transform:scale(1)} 50%{opacity:0.4;transform:scale(0.8)} }
 .update-time { font-size: 0.75rem; color: var(--text-muted); }
+.chart-subtitle { font-size: 0.72rem; color: var(--text-muted); margin-bottom: 10px; }
 .btn-refresh {
   padding: 7px 16px; border-radius: 8px; cursor: pointer;
   background: var(--cyan-dim); border: 1px solid var(--border-glow);
@@ -300,12 +301,12 @@ tbody td:first-child { color: var(--text-primary); font-weight: 600; }
   <div class="charts-grid" id="chartsRow1">
     <div class="chart-card col-4" id="card-interference">
       <div class="chart-title cyan"><span class="dot"></span>ระดับการรบกวน (Interference)</div>
-      <div class="chart-subtitle" style="font-size:0.72rem;color:var(--text-muted);margin-bottom:10px;">นับจำนวน Cell ทั้งหมด</div>
+      <div class="chart-subtitle">นับจำนวน Cell ทั้งหมด</div>
       <div class="doughnut-wrap"><canvas id="chartDonut1"></canvas><div class="doughnut-center"><div class="big" id="donut1Total">—</div><div class="small">Cell ทั้งหมด</div></div></div>
       <div class="doughnut-legend" id="donut1Legend"></div>
       <div style="border-top:1px solid var(--border);margin:16px 0;"></div>
       <div class="chart-title green" style="margin-bottom:10px;"><span class="dot"></span>Site Code (ไม่นับซ้ำ)</div>
-      <div class="chart-subtitle" style="font-size:0.72rem;color:var(--text-muted);margin-bottom:10px;">นับ Site Code ที่ไม่ซ้ำกัน</div>
+      <div class="chart-subtitle">นับ Site Code ที่ไม่ซ้ำกัน</div>
       <div class="doughnut-wrap"><canvas id="chartDonut2"></canvas><div class="doughnut-center"><div class="big" id="donut2Total">—</div><div class="small">Site ไม่ซ้ำ</div></div></div>
       <div class="doughnut-legend" id="donut2Legend"></div>
     </div>
@@ -343,7 +344,8 @@ tbody td:first-child { color: var(--text-primary); font-weight: 600; }
             <button class="filter-btn" data-filter="done" onclick="setFilter('done',this)">✅ ดำเนินการแล้ว</button>
             <button class="filter-btn" data-filter="pending" onclick="setFilter('pending',this)">⏳ รอดำเนินการ</button>
             <button class="filter-btn" data-filter="inf90" onclick="setFilter('inf90',this)">🔴 INF≥-90</button>
-            <button class="filter-btn" data-filter="inf100" onclick="setFilter('inf100',this)">🟡 INF<-90</button>
+            <button class="filter-btn" data-filter="inf100" onclick="setFilter('inf100',this)">🟡 -100~-90</button>
+            <button class="filter-btn" data-filter="inf105" onclick="setFilter('inf105',this)">🟢 INF&lt;-100</button>
           </div>
           <div class="search-box">
             <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg>
@@ -499,6 +501,7 @@ function getStatus(row) {
 function getInfClass(inf) {
   if (!inf) return 'badge-inf105';
   if (inf.includes('>= -90')) return 'badge-inf90';
+  if (inf.includes('-105')) return 'badge-inf105';
   if (inf.includes('-100')) return 'badge-inf100';
   return 'badge-inf105';
 }
@@ -1029,7 +1032,8 @@ function applyFilters() {
     if (currentFilter === 'done' && getStatus(r) !== 'done') return false;
     if (currentFilter === 'pending' && getStatus(r) !== 'pending') return false;
     if (currentFilter === 'inf90' && !(r.interference||'').includes('>= -90')) return false;
-    if (currentFilter === 'inf100' && !(r.interference||'').includes('-100')) return false;
+    if (currentFilter === 'inf100' && !((r.interference||'').includes('-100') && !(r.interference||'').includes('-105'))) return false;
+    if (currentFilter === 'inf105' && !(r.interference||'').includes('-105')) return false;
     // Search
     if (search) {
       const haystack = [r.siteCode, r.cellName, r.province, r.amphur, r.tumbol, r.cause, r.coordAWN]
