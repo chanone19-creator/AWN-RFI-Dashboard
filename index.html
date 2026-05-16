@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+﻿<!DOCTYPE html>
 <html lang="th">
 <head>
 <meta charset="UTF-8">
@@ -235,6 +235,7 @@ tbody td:first-child { color: var(--text-primary); font-weight: 600; }
 .badge-inf105 { background: rgba(16,230,138,0.12); color: var(--green); border: 1px solid rgba(16,230,138,0.25); }
 .badge-done { background: var(--green-dim); color: var(--green); border: 1px solid rgba(16,230,138,0.3); }
 .badge-pending { background: var(--amber-dim); color: var(--amber); border: 1px solid rgba(245,158,11,0.3); }
+.badge-unknown { background: rgba(107,114,128,0.15); color: #9ca3af; border: 1px solid rgba(107,114,128,0.3); }
 
 .table-footer {
   padding: 12px 20px; border-top: 1px solid var(--border);
@@ -471,10 +472,16 @@ async function loadData(silent) {
 
   let data = EMBEDDED_DATA;
   try {
-    const resp = await fetch(GAS_URL + '?t=' + Date.now());
-    const json = await resp.json();
-    if (Array.isArray(json) && json.length > 0) {
-      data = json;
+    const controller = new AbortController();
+    const timeout = setTimeout(() => controller.abort(), 5000);
+    try {
+      const resp = await fetch(GAS_URL + '?t=' + Date.now(), { signal: controller.signal });
+      const json = await resp.json();
+      if (Array.isArray(json) && json.length > 0) {
+        data = json;
+      }
+    } finally {
+      clearTimeout(timeout);
     }
   } catch(e) {
     console.warn('GAS fetch failed, using embedded data:', e);
@@ -502,16 +509,17 @@ function getStatus(row) {
 }
 
 function getInfClass(inf) {
-  if (!inf) return 'badge-inf105';
+  if (!inf) return 'badge-unknown';
   if (inf.includes('>= -90')) return 'badge-inf90';
   if (inf.includes('-105')) return 'badge-inf105';
   if (inf.includes('-100')) return 'badge-inf100';
-  return 'badge-inf105';
+  return 'badge-unknown';
 }
 
 function cleanCoord(name) {
   if (!name) return '';
-  return name.trim().split(' ')[0].replace('@','');
+  const trimmed = name.trim();
+  return trimmed ? trimmed.split(' ')[0].replace('@','') : '';
 }
 
 function cleanCause(cause) {
@@ -574,13 +582,9 @@ function destroyChart(id) {
 }
 
 function renderCharts() {
-  renderDonut1();
-  renderDonut2();
-  renderStacked();
-  renderHBar();
-  renderMonths();
-  renderCoord();
-  renderStatus();
+  [renderDonut1, renderDonut2, renderStacked, renderHBar, renderMonths, renderCoord, renderStatus].forEach(fn => {
+    try { fn(); } catch(e) { console.error('Chart render error in ' + fn.name + ':', e); }
+  });
 }
 
 // Interference Donut helpers
@@ -637,6 +641,7 @@ function renderDonut1() {
   document.getElementById('donut1Total').textContent = total;
 
   const ctx = document.getElementById('chartDonut1');
+  if (!ctx) { console.warn('Canvas chartDonut1 not found'); return; }
   charts['donut1'] = new Chart(ctx, {
     type: 'doughnut',
     data: { labels: LEVELS, datasets: [{ data: values, backgroundColor: colors, borderWidth: 2, borderColor: '#061422' }] },
@@ -680,6 +685,7 @@ function renderDonut2() {
   document.getElementById('donut2Total').textContent = total;
 
   const ctx = document.getElementById('chartDonut2');
+  if (!ctx) { console.warn('Canvas chartDonut2 not found'); return; }
   charts['donut2'] = new Chart(ctx, {
     type: 'doughnut',
     data: { labels: LEVELS, datasets: [{ data: values, backgroundColor: colors, borderWidth: 2, borderColor: '#061422' }] },
@@ -743,6 +749,7 @@ function renderStacked() {
   const xLabels = provinces.map((p, i) => [p, `${totals[i]} เซลล์ (${Math.round(totals[i]/grandTotal*100)}% รวม)`]);
 
   const ctx = document.getElementById('chartStacked');
+  if (!ctx) { console.warn('Canvas chartStacked not found'); return; }
   charts['stacked'] = new Chart(ctx, {
     type: 'bar',
     data: {
@@ -841,7 +848,7 @@ function renderHBar() {
   };
 
   const ctx = document.getElementById('chartHBar');
-  // Dynamic height
+  if (!ctx) { console.warn('Canvas chartHBar not found'); return; }
   ctx.parentElement.style.height = Math.max(200, labels.length * 40) + 'px';
   ctx.style.height = '100%';
 
@@ -915,6 +922,7 @@ function renderMonths() {
   };
 
   const ctx = document.getElementById('chartMonths');
+  if (!ctx) { console.warn('Canvas chartMonths not found'); return; }
   charts['months'] = new Chart(ctx, {
     type: 'bar',
     data: {
@@ -969,6 +977,7 @@ function renderCoord() {
   const total = values.reduce((a,b)=>a+b,0);
 
   const ctx = document.getElementById('chartCoord');
+  if (!ctx) { console.warn('Canvas chartCoord not found'); return; }
   charts['coord'] = new Chart(ctx, {
     type: 'bar',
     data: {
@@ -1003,6 +1012,7 @@ function renderStatus() {
   document.getElementById('statusPct').textContent = pct + '%';
 
   const ctx = document.getElementById('chartStatus');
+  if (!ctx) { console.warn('Canvas chartStatus not found'); return; }
   charts['status'] = new Chart(ctx, {
     type: 'doughnut',
     data: {
@@ -1025,6 +1035,8 @@ function renderStatus() {
 // TABLE
 // ============================================================
 function setFilter(filter, btn) {
+  const validFilters = ['all', 'done', 'pending', 'inf90', 'inf100', 'inf105'];
+  if (!validFilters.includes(filter)) return;
   currentFilter = filter;
   currentPage = 1;
   document.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active'));
@@ -1063,6 +1075,7 @@ function renderTable() {
     const status = getStatus(r);
     const infClass = getInfClass(r.interference);
     const infLabel = (r.interference || 'N/A').replace('=<INF<','≤INF<').replace('>= ','≥');
+    const diffNum = r.diff || 0;
     const diffVal = r.diff ? r.diff.toFixed(2) : '—';
     return `<tr>
       <td style="color:var(--text-muted)">${start+idx+1}</td>
@@ -1072,8 +1085,8 @@ function renderTable() {
       <td>${r.amphur || '—'}</td>
       <td>${r.tumbol || '—'}</td>
       <td><span class="badge ${infClass}">${infLabel}</span></td>
-      <td style="color:${parseFloat(diffVal)>25?'var(--red)':parseFloat(diffVal)>20?'var(--amber)':'var(--green)'}">${diffVal}</td>
-      <td style="font-size:0.75rem;max-width:160px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="${escapeHtml(r.cause||'')}">${cleanCause(r.cause) || '<span style="color:var(--text-muted)">ยังไม่ระบุ</span>'}</td>
+      <td style="color:${diffNum>25?'var(--red)':diffNum>20?'var(--amber)':'var(--green)'}">${diffVal}</td>
+      <td style="font-size:0.75rem;max-width:160px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="${escapeHtml(r.cause||'')}">${escapeHtml(cleanCause(r.cause)) || '<span style="color:var(--text-muted)">ยังไม่ระบุ</span>'}</td>
       <td>${r.action ? escapeHtml(r.action).replace(/\n/g,'<br>').substring(0,80) : '<span style="color:var(--text-muted)">—</span>'}</td>
       <td>${cleanCoord(r.coordAWN) || '<span style="color:var(--text-muted)">—</span>'}</td>
       <td><span class="badge ${status==='done'?'badge-done':'badge-pending'}">${status==='done'?'✅ แล้ว':'⏳ รอ'}</span></td>
@@ -1089,10 +1102,15 @@ function renderPagination(total) {
   const container = document.getElementById('pagination');
   let html = `<button class="pg-btn" onclick="goPage(${currentPage-1})" ${currentPage<=1?'disabled':''}>‹</button>`;
 
-  const range = [];
+  const sparse = [];
   for (let i = 1; i <= pages; i++) {
-    if (i === 1 || i === pages || (i >= currentPage-2 && i <= currentPage+2)) range.push(i);
-    else if (range[range.length-1] !== '...') range.push('...');
+    if (i === 1 || i === pages || (i >= currentPage-2 && i <= currentPage+2)) sparse.push(i);
+  }
+  const range = [];
+  for (let j = 0; j < sparse.length; j++) {
+    if (j > 0 && sparse[j] - sparse[j-1] === 2) range.push(sparse[j]-1);
+    else if (j > 0 && sparse[j] - sparse[j-1] > 2) range.push('...');
+    range.push(sparse[j]);
   }
   range.forEach(p => {
     if (p === '...') html += `<span class="pg-btn" style="pointer-events:none">…</span>`;
@@ -1113,3 +1131,4 @@ function goPage(p) {
 </script>
 </body>
 </html>
+
