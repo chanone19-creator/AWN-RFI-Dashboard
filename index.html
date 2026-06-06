@@ -468,7 +468,7 @@ function updateCountdownDisplay() {
 
 async function loadData(silent) {
   const btn = document.getElementById('btnRefresh');
-  if (!silent) btn.classList.add('spinning');
+  if (btn && !silent) btn.classList.add('spinning');
 
   let data = EMBEDDED_DATA;
   try {
@@ -487,12 +487,18 @@ async function loadData(silent) {
     console.warn('GAS fetch failed, using embedded data:', e);
   }
 
-  if (!silent) btn.classList.remove('spinning');
-  allData = data.filter(r => r.siteCode && r.siteCode.trim());
-  applyFilters();
-  renderKPI();
-  renderCharts();
-  document.getElementById('updateTime').textContent = 'อัพเดทล่าสุด: ' + new Date().toLocaleTimeString('th-TH');
+  try {
+    allData = data.filter(r => r && r.siteCode && r.siteCode.trim());
+    applyFilters();
+    renderKPI();
+    renderCharts();
+    const u = document.getElementById('updateTime');
+    if (u) u.textContent = 'อัพเดทล่าสุด: ' + new Date().toLocaleTimeString('th-TH');
+  } catch(e) {
+    console.error('Render error:', e);
+  } finally {
+    if (btn) btn.classList.remove('spinning');
+  }
 }
 
 function refreshData() {
@@ -582,6 +588,8 @@ function destroyChart(id) {
 }
 
 function renderCharts() {
+  // กัน "Canvas is already in use" ตอน refresh — destroy ทุก chart เดิมก่อน
+  Object.keys(charts).forEach(destroyChart);
   [renderDonut1, renderDonut2, renderStacked, renderHBar, renderMonths, renderCoord, renderStatus].forEach(fn => {
     try { fn(); } catch(e) { console.error('Chart render error in ' + fn.name + ':', e); }
   });
